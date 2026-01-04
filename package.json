@@ -1,0 +1,51 @@
+{
+  "name": "clerk-react-router-quickstart",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cross-env NODE_ENV=production react-router build",
+    "dev": "react-router dev",
+    "start": "cross-env NODE_ENV=production react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "set-admin": "tsx scripts/set-admin.ts"
+  },
+  "dependencies": {
+    "@clerk/backend": "^2.29.0",
+    "@clerk/react-router": "^2.0.1",
+    "@gsap/react": "^2.1.2",
+    "@prisma/client": "^6.19.1",
+    "@react-router/node": "^7.9.3",
+    "@react-router/serve": "^7.9.3",
+    "@types/mapbox-gl": "^3.4.1",
+    "@vercel/react-router": "^1.2.4",
+    "gsap": "^3.14.2",
+    "isbot": "^5.1.27",
+    "mapbox-gl": "^3.17.0",
+    "prisma": "^6.19.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.69.0",
+    "react-map-gl": "^8.1.0",
+    "react-router": "^7.9.3",
+    "sonner": "^2.0.7",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.9.3",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.3",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PRISMA_POSTGRESQL_URL")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  date        String
+  location    String
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  imageUrl    String?
+  categories  String[]
+  cost        String?
+  times       String?
+  url         String?
+  region      String?
+  recurrence  String?
+  endDate     String?
+  city        String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([city])
+  @@index([createdBy])
+}
+
+model AuthorApplication {
+  id          String    @id @default(cuid())
+  userId      String
+  fullName    String
+  email       String
+  bio         String
+  experience  String?
+  status      String    @default("pending")
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  reviewNotes String?
+
+  @@index([userId])
+  @@index([status])
+}

@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  @apply bg-white dark:bg-gray-950;
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+
+  .mapboxgl-popup-content {
+    background: theme('colors.slate.950') !important;
+  }
+
+  .mapboxgl-popup-tip {
+    border-top-color: theme('colors.slate.950') !important;
+  }
+}
