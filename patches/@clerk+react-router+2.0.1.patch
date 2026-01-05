@@ -1,0 +1,22 @@
+diff --git a/node_modules/@clerk/react-router/dist/server/clerkMiddleware.js b/node_modules/@clerk/react-router/dist/server/clerkMiddleware.js
+index f2ada91..21b11de 100644
+--- a/node_modules/@clerk/react-router/dist/server/clerkMiddleware.js
++++ b/node_modules/@clerk/react-router/dist/server/clerkMiddleware.js
+@@ -1,7 +1,7 @@
+ // src/server/clerkMiddleware.ts
+ import { AuthStatus, constants, createClerkRequest } from "@clerk/backend/internal";
+ import { handleNetlifyCacheInDevInstance } from "@clerk/shared/netlifyCacheHandler";
+-import { createContext } from "react-router";
++import { createContext, RouterContextProvider } from "react-router";
+ import { clerkClient } from "./clerkClient.js";
+ import { loadOptions } from "./loadOptions.js";
+ import { patchRequest } from "./utils.js";
+@@ -42,7 +42,7 @@ var clerkMiddleware = (options) => {
+         response.headers.append(key, value);
+       });
+     }
+-    return response;
++    return new RouterContextProvider(response);
+   };
+ };
+ export {
