@@ -26,6 +26,7 @@ export async function getAllEvents(): Promise<Event[]> {
     endDate: event.endDate || undefined,
     city: event.city || undefined,
     createdBy: event.createdBy,
+    createdByName: event.createdByName || undefined,
   }))
 }
 
@@ -142,6 +143,7 @@ export async function getPaginatedEvents(
       endDate: event.endDate || undefined,
       city: event.city || undefined,
       createdBy: event.createdBy,
+      createdByName: event.createdByName || undefined,
     })),
     totalCount,
   }
@@ -187,6 +189,7 @@ export async function getEventById(id: string): Promise<Event | null> {
     endDate: event.endDate || undefined,
     city: event.city || undefined,
     createdBy: event.createdBy,
+    createdByName: event.createdByName || undefined,
   }
 }
 
@@ -210,6 +213,7 @@ export async function createEvent(eventData: Omit<Event, 'id'>): Promise<Event> 
       endDate: eventData.endDate,
       city: eventData.city,
       createdBy: eventData.createdBy,
+      createdByName: eventData.createdByName,
     }
   })
 
@@ -233,6 +237,7 @@ export async function createEvent(eventData: Omit<Event, 'id'>): Promise<Event> 
     endDate: event.endDate || undefined,
     city: event.city || undefined,
     createdBy: event.createdBy,
+    createdByName: event.createdByName || undefined,
   }
 }
 
@@ -256,6 +261,7 @@ export async function updateEvent(id: string, eventData: Partial<Event>): Promis
       recurrence: eventData.recurrence,
       endDate: eventData.endDate,
       city: eventData.city,
+      // Preserve createdByName - don't update it
     }
   })
 
@@ -279,6 +285,7 @@ export async function updateEvent(id: string, eventData: Partial<Event>): Promis
     endDate: event.endDate || undefined,
     city: event.city || undefined,
     createdBy: event.createdBy,
+    createdByName: event.createdByName || undefined,
   }
 }
 

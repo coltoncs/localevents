@@ -11,26 +11,27 @@ datasource db {
 }
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  date        String
-  location    String
-  address     String?
-  latitude    Float?
-  longitude   Float?
-  imageUrl    String?
-  categories  String[]
-  cost        String?
-  times       String?
-  url         String?
-  region      String?
-  recurrence  String?
-  endDate     String?
-  city        String?
-  createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  date          String
+  location      String
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  imageUrl      String?
+  categories    String[]
+  cost          String?
+  times         String?
+  url           String?
+  region        String?
+  recurrence    String?
+  endDate       String?
+  city          String?
+  createdBy     String
+  createdByName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([date])
   @@index([city])

@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Form, useNavigate, redirect, useActionData } from 'react-router'
 import { getAuth } from '@clerk/react-router/server'
+import { createClerkClient } from '@clerk/backend'
 import type { Route } from './+types/submit'
 import { createEvent } from '~/utils/events.server'
 import { canUserCreateEvent } from '~/utils/permissions.server'
+
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! })
 
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args)
@@ -27,6 +30,10 @@ export async function action(args: Route.ActionArgs) {
   if (!userId) {
     return redirect('/')
   }
+
+  // Get the user's name from Clerk
+  const user = await clerkClient.users.getUser(userId)
+  const createdByName = user.username || user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress || 'Unknown User'
 
   const formData = await args.request.formData()
 
@@ -109,6 +116,7 @@ export async function action(args: Route.ActionArgs) {
     endDate: endDate || undefined,
     categories: categories.length > 0 ? categories : undefined,
     createdBy: userId,
+    createdByName,
   })
 
   return redirect('/events')

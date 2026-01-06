@@ -1,5 +1,5 @@
 import { useLoaderData, useNavigate, useNavigation } from 'react-router'
-import { getAuth, clerkClient } from '@clerk/react-router/server'
+import { getAuth } from '@clerk/react-router/server'
 import type { Route } from './+types/events'
 import ShaderBackground from '~/components/ShaderBackground'
 import { useEventStore } from '~/stores'
@@ -32,7 +32,7 @@ export async function loader(args: Route.LoaderArgs) {
   }
 
   // Get paginated events from server storage with filters
-  const { events: serverEvents, totalCount } = await getPaginatedEvents(page, limit, filters)
+  const { events, totalCount } = await getPaginatedEvents(page, limit, filters)
 
   // Get current user ID (if signed in)
   const { userId } = await getAuth(args)
@@ -43,39 +43,9 @@ export async function loader(args: Route.LoaderArgs) {
     userRole = await getUserRole(userId, cookieHeader)
   }
 
-  const events = serverEvents
-
-  // Fetch creator names for events - DEDUPLICATED to reduce API calls
-  // Get unique user IDs
-  const uniqueUserIds = [...new Set(events.filter(e => e.createdBy).map(e => e.createdBy))] as string[]
-
-  // Fetch each unique user only once
-  const userDataMap = new Map<string, string>()
-  await Promise.all(
-    uniqueUserIds.map(async (userId) => {
-      try {
-        const creator = await clerkClient(args).users.getUser(userId)
-        const displayName = creator.username || creator.fullName || creator.firstName || creator.emailAddresses[0]?.emailAddress || 'Unknown User'
-        userDataMap.set(userId, displayName)
-      } catch (error) {
-        userDataMap.set(userId, 'Unknown User')
-      }
-    })
-  )
-
-  // Map user data back to events
-  const eventsWithCreators = events.map((event) => {
-    if (event.createdBy && userDataMap.has(event.createdBy)) {
-      return {
-        ...event,
-        createdByName: userDataMap.get(event.createdBy)
-      }
-    }
-    return event
-  })
-
+  // Events now have createdByName already stamped on them from creation time
   return {
-    events: eventsWithCreators,
+    events,
     totalCount,
     currentPage: page,
     eventsPerPage: limit,
