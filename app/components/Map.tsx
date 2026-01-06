@@ -480,9 +480,9 @@ function MapComponent({ events, selectedEvent, selectEvent }: { events: any[], s
               {selectedEvent.recurrence && (
                 <p><span className="font-semibold text-white">Recurrence:</span> {selectedEvent.recurrence}{selectedEvent.endDate && ` (until ${formatDate(selectedEvent.endDate)})`}</p>
               )}
-              {selectedEvent.createdByName && (
+              {/* {selectedEvent.createdByName && (
                 <p><span className="font-semibold text-white">Submitted by:</span> {selectedEvent.createdByName}</p>
-              )}
+              )} */}
             </div>
             {selectedEvent.url && (
               <a

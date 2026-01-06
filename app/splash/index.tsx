@@ -1,8 +1,14 @@
 import { useRef } from 'react'
 import ShaderBackground from '~/components/ShaderBackground'
+import { SignedIn } from '@clerk/react-router'
+import { useUserRole } from '~/hooks/useUserRole'
 
 export function Splash() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const { role, isAdmin, isAuthor } = useUserRole()
+
+  const canCreateEvents = isAdmin || isAuthor
+  const canApplyForAuthor = role === 'user'
 
   return (
     <main className="w-screen min-h-screen relative overflow-hidden">
@@ -26,18 +32,24 @@ export function Splash() {
             >
               View Map
             </a>
-            <a
-              href="/submit"
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              Submit Event
-            </a>
-            <a
-              href="/apply-author"
-              className="px-6 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
-            >
-              Become an Author
-            </a>
+            <SignedIn>
+              {canCreateEvents && (
+                <a
+                  href="/submit"
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Submit Event
+                </a>
+              )}
+              {canApplyForAuthor && (
+                <a
+                  href="/apply-author"
+                  className="px-6 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors font-medium"
+                >
+                  Become an Author
+                </a>
+              )}
+            </SignedIn>
           </div>
         </div>
       </div>

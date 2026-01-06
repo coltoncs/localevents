@@ -9,27 +9,27 @@ export async function loader(args: Route.LoaderArgs) {
   const events = await getAllEvents()
 
   // Fetch creator names for events that have a createdBy field
-  const eventsWithCreators = await Promise.all(
-    events.map(async (event) => {
-      if (event.createdBy) {
-        try {
-          const creator = await clerkClient(args).users.getUser(event.createdBy)
-          return {
-            ...event,
-            createdByName: creator.username || creator.fullName || creator.firstName || creator.emailAddresses[0]?.emailAddress || 'Unknown User'
-          }
-        } catch (error) {
-          return {
-            ...event,
-            createdByName: 'Unknown User'
-          }
-        }
-      }
-      return event
-    })
-  )
+  // const eventsWithCreators = await Promise.all(
+  //   events.map(async (event) => {
+  //     if (event.createdBy) {
+  //       try {
+  //         const creator = await clerkClient(args).users.getUser(event.createdBy)
+  //         return {
+  //           ...event,
+  //           createdByName: creator.username || creator.fullName || creator.firstName || creator.emailAddresses[0]?.emailAddress || 'Unknown User'
+  //         }
+  //       } catch (error) {
+  //         return {
+  //           ...event,
+  //           createdByName: 'Unknown User'
+  //         }
+  //       }
+  //     }
+  //     return event
+  //   })
+  // )
 
-  return { events: eventsWithCreators }
+  return { events }
 }
 
 export function meta({}: Route.MetaArgs) {
