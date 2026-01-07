@@ -9,5 +9,6 @@ export default [
   route("submit", "routes/submit.tsx"),
   route("my-events", "routes/my-events.tsx"),
   route("apply-author", "routes/apply-author.tsx"),
+  route("become-author", "routes/become-author.tsx"),
   route("admin", "routes/admin.tsx"),
 ] satisfies RouteConfig;

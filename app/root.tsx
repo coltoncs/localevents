@@ -2,6 +2,7 @@ import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, 
 import { clerkMiddleware, rootAuthLoader } from '@clerk/react-router/server'
 import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/react-router'
 import { Toaster } from 'sonner'
+import { IoAddCircleSharp } from "react-icons/io5";
 import { useUIStore } from './stores'
 import { useUserRole } from './hooks/useUserRole'
 
@@ -74,6 +75,26 @@ function ResponsiveHeader() {
         </nav>
 
         <div className="flex items-center gap-4">
+          {/* Create Event Button */}
+          <SignedOut>
+            <Link
+              to="/become-author"
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+            >
+              <IoAddCircleSharp className="w-5 h-5" />
+              <span className="hidden sm:inline">Create Event</span>
+            </Link>
+          </SignedOut>
+          <SignedIn>
+            <Link
+              to={canCreateEvents ? "/submit" : "/apply-author"}
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+            >
+              <IoAddCircleSharp className="w-5 h-5" />
+              <span className="hidden sm:inline">Create Event</span>
+            </Link>
+          </SignedIn>
+
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center gap-4">
             <SignedOut>
