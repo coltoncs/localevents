@@ -2,6 +2,7 @@ import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, 
 import { clerkMiddleware, rootAuthLoader } from '@clerk/react-router/server'
 import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/react-router'
 import { Toaster } from 'sonner'
+import { Analytics } from "@vercel/analytics/react"
 import { IoAddCircleSharp } from "react-icons/io5";
 import { useUIStore } from './stores'
 import { useUserRole } from './hooks/useUserRole'
@@ -38,6 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster position="top-right" richColors />
         <ScrollRestoration />
+        <Analytics />
         <Scripts />
       </body>
     </html>
@@ -139,6 +141,7 @@ function ResponsiveHeader() {
               {canApplyForAuthor && (
                 <Link to="/apply-author" onClick={closeMobileMenu} className="block py-2 hover:text-slate-300 transition-colors">Become an Author</Link>
               )}
+              <Link to="/account" onClick={closeMobileMenu} className="block py-2 hover:text-slate-300 transition-colors">Account</Link>
               {isActuallyAdmin && (
                 <Link to="/admin" onClick={closeMobileMenu} className="block py-2 hover:text-yellow-300 transition-colors text-yellow-400">Admin</Link>
               )}
