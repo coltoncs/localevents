@@ -36,6 +36,7 @@ interface EventFilters {
   priceFilter?: 'free' | 'paid' | 'all'
   startDate?: string
   endDate?: string
+  favoriteEventIds?: string[]
 }
 
 export async function getPaginatedEvents(
@@ -44,10 +45,17 @@ export async function getPaginatedEvents(
   filters: EventFilters = {}
 ): Promise<{ events: Event[]; totalCount: number }> {
   const skip = (page - 1) * limit
-  const { searchQuery, category, priceFilter, startDate, endDate } = filters
+  const { searchQuery, category, priceFilter, startDate, endDate, favoriteEventIds } = filters
 
   // Build dynamic where clause
   const whereConditions: any[] = []
+
+  // Favorites filter - only show events in the favoriteEventIds list
+  if (favoriteEventIds !== undefined) {
+    whereConditions.push({
+      id: { in: favoriteEventIds },
+    })
+  }
 
   // Always filter to show only upcoming events (today and later in US Eastern timezone)
   // unless a specific startDate is provided
