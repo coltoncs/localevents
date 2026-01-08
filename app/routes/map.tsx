@@ -1,12 +1,30 @@
 import { Suspense, lazy } from 'react'
 import { useLoaderData } from 'react-router'
+import { getAuth } from '@clerk/react-router/server'
 import type { Route } from './+types/map'
 import { useEventStore } from '~/stores'
 import { getAllEvents } from '~/utils/events.server'
+import { getVoteCountsForEvents, getUserVotesForEvents } from '~/utils/votes.server'
 
 export async function loader(args: Route.LoaderArgs) {
   const events = await getAllEvents()
-  return { events }
+
+  // Get current user ID (if signed in)
+  const { userId } = await getAuth(args)
+
+  // Get vote data
+  const eventIds = events.map(e => e.id)
+  const voteCounts = await getVoteCountsForEvents(eventIds)
+  const userVotes = userId
+    ? await getUserVotesForEvents(userId, eventIds)
+    : new Set<string>()
+
+  return {
+    events,
+    voteCounts,
+    userVotes: Array.from(userVotes),
+    isAuthenticated: !!userId,
+  }
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -20,7 +38,7 @@ const MapComponent = lazy(() => import('~/components/Map'))
 
 function MapLoadingFallback() {
   return (
-    <div className="absolute left-0 top-0 w-full h-screen bg-slate-950 flex items-center justify-center">
+    <div className="w-lvw h-screen bg-slate-950 flex items-center justify-center">
       <div className="text-center">
         <div className="mb-4">
           <svg className="w-16 h-16 mx-auto text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,13 +59,20 @@ function MapLoadingFallback() {
 }
 
 export default function MapPage() {
-  const { events } = useLoaderData<typeof loader>()
+  const { events, voteCounts, userVotes, isAuthenticated } = useLoaderData<typeof loader>()
   const { selectedEvent, selectEvent } = useEventStore()
 
   return (
     <main className="absolute left-0 top-0">
       <Suspense fallback={<MapLoadingFallback />}>
-        <MapComponent events={events} selectedEvent={selectedEvent} selectEvent={selectEvent} />
+        <MapComponent
+          events={events}
+          selectedEvent={selectedEvent}
+          selectEvent={selectEvent}
+          voteCounts={voteCounts}
+          userVotes={userVotes}
+          isAuthenticated={isAuthenticated}
+        />
       </Suspense>
     </main>
   )

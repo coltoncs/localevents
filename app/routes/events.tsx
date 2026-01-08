@@ -5,6 +5,7 @@ import ShaderBackground from '~/components/ShaderBackground'
 import { useEventStore } from '~/stores'
 import { getPaginatedEvents, getAllCategories } from '~/utils/events.server'
 import { getUserRole } from '~/utils/roles.server'
+import { getVoteCountsForEvents, getUserVotesForEvents, getUserFavoriteEventIds } from '~/utils/votes.server'
 import type { UserRole } from '~/types/roles'
 import EventsList from '~/components/EventsList'
 
@@ -17,10 +18,20 @@ export async function loader(args: Route.LoaderArgs) {
   const priceFilter = (url.searchParams.get('price') as 'free' | 'paid' | 'all') || undefined
   const startDate = url.searchParams.get('startDate') || undefined
   const endDate = url.searchParams.get('endDate') || undefined
+  const showFavorites = url.searchParams.get('favorites') === 'true'
   const limit = 10
+
+  // Get current user ID (if signed in)
+  const { userId } = await getAuth(args)
 
   // Get all available categories
   const allCategories = await getAllCategories()
+
+  // Get user's favorite event IDs if filtering by favorites
+  let favoriteEventIds: string[] | undefined
+  if (showFavorites && userId) {
+    favoriteEventIds = await getUserFavoriteEventIds(userId)
+  }
 
   // Build filters object
   const filters = {
@@ -29,13 +40,18 @@ export async function loader(args: Route.LoaderArgs) {
     priceFilter,
     startDate,
     endDate,
+    favoriteEventIds,
   }
 
   // Get paginated events from server storage with filters
   const { events, totalCount } = await getPaginatedEvents(page, limit, filters)
 
-  // Get current user ID (if signed in)
-  const { userId } = await getAuth(args)
+  // Get vote data
+  const eventIds = events.map(e => e.id)
+  const voteCounts = await getVoteCountsForEvents(eventIds)
+  const userVotes = userId
+    ? await getUserVotesForEvents(userId, eventIds)
+    : new Set<string>()
 
   let userRole: UserRole | null = null
   if (userId) {
@@ -54,9 +70,13 @@ export async function loader(args: Route.LoaderArgs) {
     priceFilter: priceFilter || 'all',
     startDate: startDate || '',
     endDate: endDate || '',
+    showFavorites,
     allCategories,
     currentUserId: userId || null,
-    userRole
+    userRole,
+    voteCounts,
+    userVotes: Array.from(userVotes),
+    isAuthenticated: !!userId,
   }
 }
 
@@ -78,9 +98,13 @@ export default function EventsPage() {
     priceFilter,
     startDate,
     endDate,
+    showFavorites,
     allCategories,
     currentUserId,
-    userRole
+    userRole,
+    voteCounts,
+    userVotes,
+    isAuthenticated,
   } = useLoaderData<typeof loader>()
   const { selectEvent } = useEventStore()
   const navigate = useNavigate()
@@ -94,6 +118,7 @@ export default function EventsPage() {
     price?: 'free' | 'paid' | 'all'
     startDate?: string
     endDate?: string
+    favorites?: boolean
   }, page: number = 1) => {
     const params = new URLSearchParams()
     params.set('page', page.toString())
@@ -102,6 +127,7 @@ export default function EventsPage() {
     if (filters.price && filters.price !== 'all') params.set('price', filters.price)
     if (filters.startDate) params.set('startDate', filters.startDate)
     if (filters.endDate) params.set('endDate', filters.endDate)
+    if (filters.favorites) params.set('favorites', 'true')
     return params
   }
 
@@ -111,6 +137,7 @@ export default function EventsPage() {
     price?: 'free' | 'paid' | 'all'
     startDate?: string
     endDate?: string
+    favorites?: boolean
   }) => {
     const params = buildFilterParams(filters, 1)
     navigate(`/events?${params.toString()}`)
@@ -124,6 +151,7 @@ export default function EventsPage() {
     if (priceFilter && priceFilter !== 'all') params.set('price', priceFilter)
     if (startDate) params.set('startDate', startDate)
     if (endDate) params.set('endDate', endDate)
+    if (showFavorites) params.set('favorites', 'true')
     navigate(`/events?${params.toString()}`)
   }
 
@@ -166,6 +194,7 @@ export default function EventsPage() {
             priceFilter={priceFilter}
             startDate={startDate}
             endDate={endDate}
+            showFavorites={showFavorites}
             isLoading={isLoading}
             canEditEvent={canEditEvent}
             onFilterChange={handleFilterChange}
@@ -173,8 +202,11 @@ export default function EventsPage() {
             onSelectEvent={(event) => selectEvent(event as any)}
             showFilters={true}
             showCreateButton={false}
+            voteCounts={voteCounts}
+            userVotes={userVotes}
+            isAuthenticated={isAuthenticated}
             emptyStateMessage={
-              searchQuery || category || (priceFilter && priceFilter !== 'all') || startDate || endDate
+              searchQuery || category || (priceFilter && priceFilter !== 'all') || startDate || endDate || showFavorites
                 ? 'No events match your current filters. Try adjusting your search criteria.'
                 : 'No events available at the moment.'
             }

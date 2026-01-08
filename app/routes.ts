@@ -11,4 +11,5 @@ export default [
   route("apply-author", "routes/apply-author.tsx"),
   route("become-author", "routes/become-author.tsx"),
   route("admin", "routes/admin.tsx"),
+  route("api/vote", "routes/api.vote.tsx"),
 ] satisfies RouteConfig;

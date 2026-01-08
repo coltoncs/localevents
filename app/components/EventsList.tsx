@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { formatDate } from '~/utils/dateFormatter'
+import FavoriteButton from './FavoriteButton'
 
 interface Event {
   id: string
@@ -31,6 +32,7 @@ interface EventsListProps {
   priceFilter?: 'free' | 'paid' | 'all'
   startDate?: string
   endDate?: string
+  showFavorites?: boolean
   isLoading?: boolean
   canEditEvent?: (event: Event) => boolean
   onSearch?: (query: string) => void
@@ -40,6 +42,7 @@ interface EventsListProps {
     price?: 'free' | 'paid' | 'all'
     startDate?: string
     endDate?: string
+    favorites?: boolean
   }) => void
   onPageChange?: (page: number) => void
   onSelectEvent?: (event: Event) => void
@@ -50,6 +53,9 @@ interface EventsListProps {
   emptyStateActionLabel?: string
   emptyStateActionHref?: string
   enableBulkDelete?: boolean
+  voteCounts?: Record<string, number>
+  userVotes?: string[]
+  isAuthenticated?: boolean
 }
 
 export default function EventsList({
@@ -63,6 +69,7 @@ export default function EventsList({
   priceFilter = 'all',
   startDate = '',
   endDate = '',
+  showFavorites = false,
   isLoading = false,
   canEditEvent,
   onSearch,
@@ -76,20 +83,26 @@ export default function EventsList({
   emptyStateActionLabel,
   emptyStateActionHref,
   enableBulkDelete = false,
+  voteCounts = {},
+  userVotes = [],
+  isAuthenticated = false,
 }: EventsListProps) {
   const [searchInput, setSearchInput] = useState(searchQuery)
   const [selectedCategory, setSelectedCategory] = useState(category)
   const [selectedPrice, setSelectedPrice] = useState(priceFilter)
   const [selectedStartDate, setSelectedStartDate] = useState(startDate)
   const [selectedEndDate, setSelectedEndDate] = useState(endDate)
+  const [selectedShowFavorites, setSelectedShowFavorites] = useState(showFavorites)
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+
+  const userVotesSet = new Set(userVotes)
 
   const totalPages = Math.ceil(totalCount / eventsPerPage)
   const startIndex = (currentPage - 1) * eventsPerPage
   const endIndex = startIndex + eventsPerPage
 
-  const hasActiveFilters = searchQuery || category || (priceFilter && priceFilter !== 'all') || startDate || endDate
+  const hasActiveFilters = searchQuery || category || (priceFilter && priceFilter !== 'all') || startDate || endDate || showFavorites
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -100,6 +113,7 @@ export default function EventsList({
         price: selectedPrice !== 'all' ? selectedPrice : undefined,
         startDate: selectedStartDate || undefined,
         endDate: selectedEndDate || undefined,
+        favorites: selectedShowFavorites || undefined,
       })
     }
   }
@@ -112,6 +126,7 @@ export default function EventsList({
         price: selectedPrice !== 'all' ? selectedPrice : undefined,
         startDate: selectedStartDate || undefined,
         endDate: selectedEndDate || undefined,
+        favorites: selectedShowFavorites || undefined,
       })
     }
   }
@@ -122,8 +137,24 @@ export default function EventsList({
     setSelectedPrice('all')
     setSelectedStartDate('')
     setSelectedEndDate('')
+    setSelectedShowFavorites(false)
     if (onFilterChange) {
       onFilterChange({})
+    }
+  }
+
+  const handleToggleFavorites = () => {
+    const newValue = !selectedShowFavorites
+    setSelectedShowFavorites(newValue)
+    if (onFilterChange) {
+      onFilterChange({
+        search: searchInput.trim() || undefined,
+        category: selectedCategory || undefined,
+        price: selectedPrice !== 'all' ? selectedPrice : undefined,
+        startDate: selectedStartDate || undefined,
+        endDate: selectedEndDate || undefined,
+        favorites: newValue || undefined,
+      })
     }
   }
 
@@ -214,6 +245,33 @@ export default function EventsList({
               <span className="text-xl">+</span>
               New Event
             </a>
+          )}
+          {isAuthenticated && (
+            <button
+              onClick={handleToggleFavorites}
+              disabled={isLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium border ${
+                selectedShowFavorites
+                  ? 'bg-red-600/20 text-red-400 border-red-600/50 hover:bg-red-600/30'
+                  : 'bg-slate-800/80 text-slate-300 border-slate-600 hover:text-white hover:border-slate-500'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={selectedShowFavorites ? 'Show all events' : 'Show favorites only'}
+            >
+              <svg
+                className="w-4 h-4"
+                fill={selectedShowFavorites ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+              {selectedShowFavorites ? 'Favorites' : 'Favorites'}
+            </button>
           )}
           {totalCount > 0 && (
             <div className="flex gap-1 bg-slate-800/80 border border-slate-600 rounded-lg p-1">
@@ -471,6 +529,7 @@ export default function EventsList({
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Time</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Cost</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase tracking-wider">Fav</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -532,6 +591,16 @@ export default function EventsList({
                         }`} title={event.cost || 'N/A'}>
                           {event.cost || 'N/A'}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <FavoriteButton
+                          eventId={event.id}
+                          initialVoted={userVotesSet.has(event.id)}
+                          initialCount={voteCounts[event.id] || 0}
+                          isAuthenticated={isAuthenticated}
+                          size="sm"
+                          showCount={true}
+                        />
                       </td>
                       <td className="px-4 py-3 text-sm whitespace-nowrap">
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -607,7 +676,19 @@ export default function EventsList({
                     <div className="p-6 flex-1">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-2xl font-semibold mb-2 text-white">{event.title}</h3>
+                          <div className="flex items-start gap-3">
+                            <h3 className="text-2xl font-semibold mb-2 text-white">{event.title}</h3>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <FavoriteButton
+                                eventId={event.id}
+                                initialVoted={userVotesSet.has(event.id)}
+                                initialCount={voteCounts[event.id] || 0}
+                                isAuthenticated={isAuthenticated}
+                                size="md"
+                                showCount={true}
+                              />
+                            </div>
+                          </div>
                           <p className="text-gray-300">
                             {event.location}
                           </p>

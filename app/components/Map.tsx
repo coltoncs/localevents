@@ -4,8 +4,26 @@ import 'mapbox-gl/dist/mapbox-gl.css'; // Essential CSS
 import type { MapRef } from 'react-map-gl/mapbox';
 import type { CircleLayer, SymbolLayer } from 'react-map-gl/mapbox';
 import { formatDate } from '~/utils/dateFormatter';
+import FavoriteButton from './FavoriteButton';
 
-function MapComponent({ events, selectedEvent, selectEvent }: { events: any[], selectedEvent: any, selectEvent: (event: any) => void }) {
+interface MapComponentProps {
+  events: any[]
+  selectedEvent: any
+  selectEvent: (event: any) => void
+  voteCounts?: Record<string, number>
+  userVotes?: string[]
+  isAuthenticated?: boolean
+}
+
+function MapComponent({
+  events,
+  selectedEvent,
+  selectEvent,
+  voteCounts = {},
+  userVotes = [],
+  isAuthenticated = false,
+}: MapComponentProps) {
+  const userVotesSet = new Set(userVotes);
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState({
     longitude: -78.6382,
@@ -353,7 +371,17 @@ function MapComponent({ events, selectedEvent, selectEvent }: { events: any[], s
           anchor="bottom"
         >
           <div className="p-2 max-w-sm max-h-[40vh] overflow-y-auto bg-slate-950 text-white rounded-lg">
-            <h3 className="font-bold text-lg mb-2 text-white">{selectedEvent.title}</h3>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h3 className="font-bold text-lg text-white">{selectedEvent.title}</h3>
+              <FavoriteButton
+                eventId={selectedEvent.id}
+                initialVoted={userVotesSet.has(selectedEvent.id)}
+                initialCount={voteCounts[selectedEvent.id] || 0}
+                isAuthenticated={isAuthenticated}
+                size="md"
+                showCount={true}
+              />
+            </div>
             {selectedEvent.imageUrl && (
               <img
                 src={selectedEvent.imageUrl}
@@ -440,7 +468,17 @@ function MapComponent({ events, selectedEvent, selectEvent }: { events: any[], s
       {selectedEvent && isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-slate-950 rounded-t-2xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto border-t border-slate-800">
           <div className="sticky top-0 bg-slate-950 border-b border-slate-800 p-4 flex justify-between items-center">
-            <h3 className="font-bold text-lg text-white">{selectedEvent.title}</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="font-bold text-lg text-white">{selectedEvent.title}</h3>
+              <FavoriteButton
+                eventId={selectedEvent.id}
+                initialVoted={userVotesSet.has(selectedEvent.id)}
+                initialCount={voteCounts[selectedEvent.id] || 0}
+                isAuthenticated={isAuthenticated}
+                size="md"
+                showCount={true}
+              />
+            </div>
             <button
               onClick={() => selectEvent(null)}
               className="text-slate-400 hover:text-white text-2xl leading-none"
@@ -570,11 +608,23 @@ function MapComponent({ events, selectedEvent, selectEvent }: { events: any[], s
                                 <div className="font-medium text-white text-sm line-clamp-2 flex-1">
                                   {event.title}
                                 </div>
-                                {distance !== null && (
-                                  <div className="text-xs text-blue-400 whitespace-nowrap">
-                                    {distance.toFixed(1)} mi
+                                <div className="flex items-center gap-2">
+                                  {distance !== null && (
+                                    <div className="text-xs text-blue-400 whitespace-nowrap">
+                                      {distance.toFixed(1)} mi
+                                    </div>
+                                  )}
+                                  <div onClick={(e) => e.stopPropagation()}>
+                                    <FavoriteButton
+                                      eventId={event.id}
+                                      initialVoted={userVotesSet.has(event.id)}
+                                      initialCount={voteCounts[event.id] || 0}
+                                      isAuthenticated={isAuthenticated}
+                                      size="sm"
+                                      showCount={false}
+                                    />
                                   </div>
-                                )}
+                                </div>
                               </div>
                               {event.cost && (
                                 <div className="text-xs text-green-400">

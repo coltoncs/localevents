@@ -3,6 +3,7 @@ import { getAuth } from '@clerk/react-router/server'
 import type { Route } from './+types/my-events'
 import { getPaginatedEventsByUser } from '~/utils/permissions.server'
 import { getAllCategories, deleteEvent } from '~/utils/events.server'
+import { getVoteCountsForEvents, getUserVotesForEvents } from '~/utils/votes.server'
 import ShaderBackground from '~/components/ShaderBackground'
 import EventsList from '~/components/EventsList'
 import { useEventStore } from '~/stores'
@@ -69,6 +70,11 @@ export async function loader(args: Route.LoaderArgs) {
   // Get paginated events from user
   const { events, totalCount } = await getPaginatedEventsByUser(userId, page, limit, filters)
 
+  // Get vote data
+  const eventIds = events.map(e => e.id)
+  const voteCounts = await getVoteCountsForEvents(eventIds)
+  const userVotes = await getUserVotesForEvents(userId, eventIds)
+
   return {
     events,
     totalCount,
@@ -80,6 +86,9 @@ export async function loader(args: Route.LoaderArgs) {
     startDate: startDate || '',
     endDate: endDate || '',
     allCategories,
+    voteCounts,
+    userVotes: Array.from(userVotes),
+    isAuthenticated: true,
   }
 }
 
@@ -102,6 +111,9 @@ export default function MyEventsPage() {
     startDate,
     endDate,
     allCategories,
+    voteCounts,
+    userVotes,
+    isAuthenticated,
   } = useLoaderData<typeof loader>()
   const { selectEvent } = useEventStore()
   const navigate = useNavigate()
@@ -191,6 +203,9 @@ export default function MyEventsPage() {
             emptyStateActionLabel="Create Your First Event"
             emptyStateActionHref="/submit"
             enableBulkDelete={true}
+            voteCounts={voteCounts}
+            userVotes={userVotes}
+            isAuthenticated={isAuthenticated}
           />
         </div>
       </div>
