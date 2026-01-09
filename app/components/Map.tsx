@@ -574,7 +574,7 @@ function MapComponent({
                   No events for {formatDate(selectedDate)}
                 </div>
               ) : (
-                <div>
+                <div className='sticky'>
                   {sortedCities.map((city) => (
                     <div key={city}>
                       {/* City header */}
