@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Form, useNavigate, redirect, useActionData } from 'react-router'
+import { toast } from 'sonner'
 import { getAuth } from '@clerk/react-router/server'
 import { createClerkClient } from '@clerk/backend'
 import type { Route } from './+types/submit'
@@ -97,29 +98,33 @@ export async function action(args: Route.ActionArgs) {
   }
 
   // Create the event
-  await createEvent({
-    title,
-    description,
-    date,
-    location,
-    address: address || undefined,
-    city: city || undefined,
-    region: region || undefined,
-    coordinates: latitude && longitude
-      ? { lat: parseFloat(latitude), lng: parseFloat(longitude) }
-      : undefined,
-    cost: cost || undefined,
-    times: times || undefined,
-    url: url || undefined,
-    imageUrl: imageUrl || undefined,
-    recurrence: recurrence || undefined,
-    endDate: endDate || undefined,
-    categories: categories.length > 0 ? categories : undefined,
-    createdBy: userId,
-    createdByName,
-  })
+  try {
+    await createEvent({
+      title,
+      description,
+      date,
+      location,
+      address: address || undefined,
+      city: city || undefined,
+      region: region || undefined,
+      coordinates: latitude && longitude
+        ? { lat: parseFloat(latitude), lng: parseFloat(longitude) }
+        : undefined,
+      cost: cost || undefined,
+      times: times || undefined,
+      url: url || undefined,
+      imageUrl: imageUrl || undefined,
+      recurrence: recurrence || undefined,
+      endDate: endDate || undefined,
+      categories: categories.length > 0 ? categories : undefined,
+      createdBy: userId,
+      createdByName,
+    })
 
-  return redirect('/events')
+    return { success: 'Event created successfully!' }
+  } catch (error) {
+    return { error: 'Failed to create event. Please try again.' }
+  }
 }
 
 export function meta({}: Route.MetaArgs) {
@@ -134,6 +139,18 @@ export default function SubmitPage() {
   const actionData = useActionData<typeof action>()
   const [categories, setCategories] = useState<string[]>([])
   const [hasRecurrence, setHasRecurrence] = useState(false)
+
+  // Show toast notifications based on action results
+  useEffect(() => {
+    if (actionData?.error) {
+      toast.error(actionData.error)
+    }
+
+    if (actionData?.success) {
+      toast.success(actionData.success)
+      navigate('/events')
+    }
+  }, [actionData, navigate])
 
   // Get today's date in US Eastern Time for min attribute
   const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
@@ -156,12 +173,6 @@ export default function SubmitPage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Submit an Event</h1>
-
-      {actionData?.error && (
-        <div className="max-w-2xl mb-4 p-4 bg-red-900/50 border border-red-700 rounded text-red-200">
-          {actionData.error}
-        </div>
-      )}
 
       <Form method="post" className="max-w-2xl space-y-6">
         {/* Basic Information */}
@@ -335,32 +346,51 @@ export default function SubmitPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="latitude" className="block text-sm font-medium mb-2">
-                Latitude
-              </label>
-              <input
-                id="latitude"
-                name="latitude"
-                type="number"
-                step="any"
-                className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-                placeholder="e.g., 35.7796"
-              />
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium">Coordinates</span>
+              <div className="relative group">
+                <svg
+                  className="w-4 h-4 text-slate-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path strokeWidth="2" d="M12 16v-4M12 8h.01" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-700 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  Required for your event to appear on the map
+                </div>
+              </div>
             </div>
-            <div>
-              <label htmlFor="longitude" className="block text-sm font-medium mb-2">
-                Longitude
-              </label>
-              <input
-                id="longitude"
-                name="longitude"
-                type="number"
-                step="any"
-                className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-                placeholder="e.g., -78.6382"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="latitude" className="block text-sm font-medium mb-2">
+                  Latitude
+                </label>
+                <input
+                  id="latitude"
+                  name="latitude"
+                  type="number"
+                  step="any"
+                  className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
+                  placeholder="e.g., 35.7796"
+                />
+              </div>
+              <div>
+                <label htmlFor="longitude" className="block text-sm font-medium mb-2">
+                  Longitude
+                </label>
+                <input
+                  id="longitude"
+                  name="longitude"
+                  type="number"
+                  step="any"
+                  className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
+                  placeholder="e.g., -78.6382"
+                />
+              </div>
             </div>
           </div>
         </div>

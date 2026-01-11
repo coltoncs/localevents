@@ -356,34 +356,53 @@ export default function EditEventPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="latitude" className="block text-sm font-medium mb-2">
-                Latitude
-              </label>
-              <input
-                id="latitude"
-                name="latitude"
-                type="number"
-                step="any"
-                defaultValue={event.coordinates?.lat}
-                className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-                placeholder="35.7796"
-              />
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium">Coordinates</span>
+              <div className="relative group">
+                <svg
+                  className="w-4 h-4 text-slate-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path strokeWidth="2" d="M12 16v-4M12 8h.01" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-700 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  Required for your event to appear on the map
+                </div>
+              </div>
             </div>
-            <div>
-              <label htmlFor="longitude" className="block text-sm font-medium mb-2">
-                Longitude
-              </label>
-              <input
-                id="longitude"
-                name="longitude"
-                type="number"
-                step="any"
-                defaultValue={event.coordinates?.lng}
-                className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-                placeholder="-78.6382"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="latitude" className="block text-sm font-medium mb-2">
+                  Latitude
+                </label>
+                <input
+                  id="latitude"
+                  name="latitude"
+                  type="number"
+                  step="any"
+                  defaultValue={event.coordinates?.lat}
+                  className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
+                  placeholder="35.7796"
+                />
+              </div>
+              <div>
+                <label htmlFor="longitude" className="block text-sm font-medium mb-2">
+                  Longitude
+                </label>
+                <input
+                  id="longitude"
+                  name="longitude"
+                  type="number"
+                  step="any"
+                  defaultValue={event.coordinates?.lng}
+                  className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
+                  placeholder="-78.6382"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ export function Splash() {
   const canApplyForAuthor = role === 'user'
 
   return (
-    <main className="w-screen min-h-screen relative overflow-hidden">
+    <main className="w-screen h-screen -mt-16 relative overflow-hidden">
       <ShaderBackground variant='aurora' />
 
       <div className="absolute inset-0 flex items-center justify-center" ref={containerRef}>
