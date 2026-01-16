@@ -12,4 +12,5 @@ export default [
   route("become-author", "routes/become-author.tsx"),
   route("admin", "routes/admin.tsx"),
   route("api/vote", "routes/api.vote.tsx"),
+  route("api/cron/cleanup", "routes/api.cron.cleanup.tsx"),
 ] satisfies RouteConfig;
