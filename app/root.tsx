@@ -3,6 +3,7 @@ import { clerkMiddleware, rootAuthLoader } from '@clerk/react-router/server'
 import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/react-router'
 import { Toaster } from 'sonner'
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import { IoAddCircleSharp } from "react-icons/io5";
 import { useUIStore } from './stores'
 import { useUserRole } from './hooks/useUserRole'
@@ -40,6 +41,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Toaster position="top-right" richColors />
         <ScrollRestoration />
         <Analytics />
+        <SpeedInsights />
         <Scripts />
       </body>
     </html>
