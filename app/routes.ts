@@ -14,4 +14,5 @@ export default [
   route("api/vote", "routes/api.vote.tsx"),
   route("api/cron/cleanup", "routes/api.cron.cleanup.tsx"),
   route("api/upload", "routes/api.upload.tsx"),
+  route("api/delete-image", "routes/api.delete-image.tsx"),
 ] satisfies RouteConfig;

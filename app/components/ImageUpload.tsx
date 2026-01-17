@@ -14,6 +14,8 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
   const [inputMode, setInputMode] = useState<InputMode>('upload')
   const [urlInput, setUrlInput] = useState(currentImageUrl || '')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Track the blob URL for deletion purposes
+  const [uploadedBlobUrl, setUploadedBlobUrl] = useState<string | null>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -59,6 +61,7 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
         throw new Error(data.error || 'Upload failed')
       }
 
+      setUploadedBlobUrl(data.url)
       onImageUrlChange(data.url)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
@@ -86,7 +89,23 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
     onImageUrlChange(urlInput)
   }
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
+    // Delete the blob if it was uploaded during this session
+    if (uploadedBlobUrl) {
+      try {
+        const formData = new FormData()
+        formData.append('url', uploadedBlobUrl)
+        await fetch('/api/delete-image', {
+          method: 'POST',
+          body: formData,
+        })
+      } catch (err) {
+        // Silently fail - the blob might already be deleted
+        console.error('Failed to delete image:', err)
+      }
+      setUploadedBlobUrl(null)
+    }
+
     setPreview(null)
     setUrlInput('')
     onImageUrlChange('')

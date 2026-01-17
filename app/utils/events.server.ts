@@ -1,5 +1,27 @@
 import { prisma } from './db.server'
+import { del } from '@vercel/blob'
 import type { Event } from '~/stores/useEventStore'
+
+/**
+ * Delete a Vercel Blob image by URL.
+ * Only deletes if the URL is a Vercel Blob URL.
+ * Silently fails if the image doesn't exist or deletion fails.
+ */
+export async function deleteBlobImage(url: string | null | undefined): Promise<void> {
+  if (!url) return
+
+  // Only delete Vercel Blob URLs
+  if (!url.includes('.vercel-storage.com') && !url.includes('.blob.vercel-storage.com')) {
+    return
+  }
+
+  try {
+    await del(url)
+  } catch (error) {
+    // Log but don't throw - image might already be deleted
+    console.error('Failed to delete blob image:', url, error)
+  }
+}
 
 export async function getAllEvents(): Promise<Event[]> {
   const events = await prisma.event.findMany({
@@ -299,9 +321,22 @@ export async function updateEvent(id: string, eventData: Partial<Event>): Promis
 
 export async function deleteEvent(id: string): Promise<boolean> {
   try {
+    // First fetch the event to get the imageUrl
+    const event = await prisma.event.findUnique({
+      where: { id },
+      select: { imageUrl: true }
+    })
+
+    // Delete the database record
     await prisma.event.delete({
       where: { id }
     })
+
+    // Delete the blob image if it exists
+    if (event?.imageUrl) {
+      await deleteBlobImage(event.imageUrl)
+    }
+
     return true
   } catch (error) {
     return false
