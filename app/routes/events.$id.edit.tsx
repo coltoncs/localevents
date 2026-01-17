@@ -4,6 +4,7 @@ import { getAuth } from '@clerk/react-router/server'
 import type { Route } from './+types/events.$id.edit'
 import { getEventById, updateEvent } from '~/utils/events.server'
 import { canUserModifyEvent } from '~/utils/permissions.server'
+import { ImageUpload } from '~/components/ImageUpload'
 
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args)
@@ -143,6 +144,7 @@ export default function EditEventPage() {
   const actionData = useActionData<typeof action>()
   const [categories, setCategories] = useState<string[]>(event.categories || [])
   const [hasRecurrence, setHasRecurrence] = useState(!!event.recurrence)
+  const [imageUrl, setImageUrl] = useState(event.imageUrl || '')
 
   // Get today's date in US Eastern Time for min attribute
   const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
@@ -206,17 +208,8 @@ export default function EditEventPage() {
           </div>
 
           <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium mb-2">
-              Image URL
-            </label>
-            <input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              defaultValue={event.imageUrl}
-              className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-              placeholder="https://example.com/image.jpg"
-            />
+            <ImageUpload currentImageUrl={event.imageUrl} onImageUrlChange={setImageUrl} />
+            <input type="hidden" name="imageUrl" value={imageUrl} />
           </div>
 
           <div>

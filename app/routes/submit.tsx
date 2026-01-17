@@ -6,6 +6,7 @@ import { createClerkClient } from '@clerk/backend'
 import type { Route } from './+types/submit'
 import { createEvent } from '~/utils/events.server'
 import { canUserCreateEvent } from '~/utils/permissions.server'
+import { ImageUpload } from '~/components/ImageUpload'
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! })
 
@@ -139,6 +140,7 @@ export default function SubmitPage() {
   const actionData = useActionData<typeof action>()
   const [categories, setCategories] = useState<string[]>([])
   const [hasRecurrence, setHasRecurrence] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
 
   // Show toast notifications based on action results
   useEffect(() => {
@@ -206,16 +208,8 @@ export default function SubmitPage() {
           </div>
 
           <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium mb-2">
-              Image URL
-            </label>
-            <input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-              placeholder="https://example.com/image.jpg"
-            />
+            <ImageUpload onImageUrlChange={setImageUrl} />
+            <input type="hidden" name="imageUrl" value={imageUrl} />
           </div>
 
           <div>
