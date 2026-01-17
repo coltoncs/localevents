@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("map", "routes/map.tsx"),
   route("events", "routes/events.tsx"),
+  route("events/:id", "routes/events.$id.tsx"),
   route("events/:id/edit", "routes/events.$id.edit.tsx"),
   route("events/:id/delete", "routes/events.$id.delete.tsx"),
   route("submit", "routes/submit.tsx"),

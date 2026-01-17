@@ -604,15 +604,22 @@ export default function EventsList({
                       </td>
                       <td className="px-4 py-3 text-sm whitespace-nowrap">
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <a
+                            href={`/events/${event.id}`}
+                            className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-500 transition-colors text-xs"
+                            title="View Details"
+                          >
+                            Details
+                          </a>
                           {event.url && (
                             <a
                               href={event.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
-                              title="Learn More"
+                              title="Visit Website"
                             >
-                              View
+                              Link
                             </a>
                           )}
                           {canEdit && (
@@ -740,6 +747,13 @@ export default function EventsList({
                       )}
 
                       <div className="flex gap-3 mt-4">
+                        <a
+                          href={`/events/${event.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500 transition-colors inline-block"
+                        >
+                          View Details
+                        </a>
                         {event.url && (
                           <a
                             href={event.url}
@@ -748,7 +762,7 @@ export default function EventsList({
                             onClick={(e) => e.stopPropagation()}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors inline-block"
                           >
-                            Learn More
+                            Visit Website
                           </a>
                         )}
                         {canEdit && (
