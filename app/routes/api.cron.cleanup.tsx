@@ -30,15 +30,7 @@ export async function loader({ request }: { request: Request }) {
   console.log(`[Cron] Running cleanup for date: ${today}`)
 
   // Fetch all events to filter in code (more reliable than string comparison in DB)
-  const allEvents = await prisma.event.findMany({
-    select: {
-      id: true,
-      date: true,
-      recurrence: true,
-      endDate: true,
-      imageUrl: true,
-    },
-  })
+  const allEvents = await prisma.event.findMany()
 
   // Find expired events
   const expiredEvents = allEvents.filter((event) => {
