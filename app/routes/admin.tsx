@@ -10,7 +10,7 @@ import { transformApiEvents } from '~/utils/transformApiData'
 import ShaderBackground from '~/components/ShaderBackground'
 import { useRoleSimulationStore } from '~/stores'
 import { useUserRole } from '~/hooks/useUserRole'
-import type { AuthorApplication } from '@prisma/client'
+import type { AuthorApplication } from '../../prisma/generated/client.js'
 
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args)
