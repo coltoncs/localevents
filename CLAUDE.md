@@ -89,6 +89,7 @@ Required in `.env`:
 ```
 CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
-PRISMA_POSTGRESQL_URL=postgresql://...
-VITE_MAPBOX_TOKEN=pk.eyJ...  # For map features
+DATABASE_URL=prisma://accelerate...     # Prisma Accelerate connection (runtime queries with caching)
+PRISMA_POSTGRESQL_URL=postgresql://...  # Direct connection (migrations/seeding)
+VITE_MAPBOX_TOKEN=pk.eyJ...             # For map features
 ```

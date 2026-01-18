@@ -25,7 +25,8 @@ export async function deleteBlobImage(url: string | null | undefined): Promise<v
 
 export async function getAllEvents(): Promise<Event[]> {
   const events = await prisma.event.findMany({
-    orderBy: { date: 'asc' }
+    orderBy: { date: 'asc' },
+    cacheStrategy: { ttl: 30, swr: 60 }, // Cache for 30s, serve stale for 60s while revalidating
   })
 
   return events.map((event) => ({
@@ -148,8 +149,12 @@ export async function getPaginatedEvents(
       orderBy: { date: 'asc' },
       skip,
       take: limit,
+      cacheStrategy: { ttl: 30, swr: 60 }, // Cache for 30s, serve stale for 60s while revalidating
     }),
-    prisma.event.count({ where: whereClause }),
+    prisma.event.count({
+      where: whereClause,
+      cacheStrategy: { ttl: 30, swr: 60 },
+    }),
   ])
 
   return {
@@ -182,6 +187,7 @@ export async function getPaginatedEvents(
 export async function getAllCategories(): Promise<string[]> {
   const events = await prisma.event.findMany({
     select: { categories: true },
+    cacheStrategy: { ttl: 60, swr: 120 }, // Cache for 60s, serve stale for 120s while revalidating
   })
 
   const categoriesSet = new Set<string>()
@@ -194,7 +200,8 @@ export async function getAllCategories(): Promise<string[]> {
 
 export async function getEventById(id: string): Promise<Event | null> {
   const event = await prisma.event.findUnique({
-    where: { id }
+    where: { id },
+    cacheStrategy: { ttl: 30, swr: 60 }, // Cache for 30s, serve stale for 60s while revalidating
   })
 
   if (!event) return null

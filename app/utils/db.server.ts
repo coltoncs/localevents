@@ -1,16 +1,20 @@
 import 'dotenv/config'
 import { PrismaClient } from '../../prisma/generated/client.js'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { withAccelerate } from '@prisma/extension-accelerate'
 
-let prisma: PrismaClient
+// Extended client type with Accelerate caching support
+type PrismaClientWithAccelerate = ReturnType<typeof createPrismaClient>
+
+let prisma: PrismaClientWithAccelerate
 
 declare global {
-  var __db__: PrismaClient
+  var __db__: PrismaClientWithAccelerate
 }
 
-function createPrismaClient(): PrismaClient {
-  const adapter = new PrismaPg({ connectionString: process.env.PRISMA_POSTGRESQL_URL! })
-  return new PrismaClient({ adapter })
+function createPrismaClient() {
+  return new PrismaClient({
+    accelerateUrl: process.env.DATABASE_URL!,
+  }).$extends(withAccelerate())
 }
 
 // This is needed because in development we don't want to restart
@@ -24,7 +28,6 @@ if (process.env.NODE_ENV === 'production') {
     global.__db__ = createPrismaClient()
   }
   prisma = global.__db__
-  prisma.$connect()
 }
 
 export { prisma }
