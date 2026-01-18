@@ -52,6 +52,7 @@ function MapComponent({
   };
 
   const isPreviousDayDisabled = () => {
+    if (!selectedDate) return;
     const today = getEasternDateString();
 
     // Calculate previous day in US Eastern time
