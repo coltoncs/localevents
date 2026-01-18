@@ -215,13 +215,13 @@ export default function EventsList({
 
   return (
     <>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex-col md:flex md:flex-row justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-white">
           {showCreateButton ? 'My Events' : 'Upcoming Events'}
         </h2>
         <div className="flex items-center gap-4">
           {totalCount > 0 && (
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-400 text-sm hidden md:block">
               Showing {startIndex + 1}-{Math.min(endIndex, totalCount)} of {totalCount} events
             </p>
           )}
