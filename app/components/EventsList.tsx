@@ -700,7 +700,10 @@ export default function EventsList({
                             {event.location}
                           </p>
                           {event.address && (
-                            <p className="text-sm text-gray-400">{event.address}</p>
+                            <p className="text-sm text-gray-400">
+                              {event.address}
+                              {event.city && `, ${event.city}`}
+                            </p>
                           )}
                         </div>
                         <div className="text-right text-sm text-gray-400 ml-4">
