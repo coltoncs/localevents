@@ -5,6 +5,7 @@ import type { Route } from './+types/events.$id.edit'
 import { getEventById, updateEvent } from '~/utils/events.server'
 import { canUserModifyEvent } from '~/utils/permissions.server'
 import { ImageUpload } from '~/components/ImageUpload'
+import { AddressLookup } from '~/components/AddressLookup'
 
 export async function loader(args: Route.LoaderArgs) {
   const { userId } = await getAuth(args)
@@ -309,95 +310,13 @@ export default function EditEventPage() {
             />
           </div>
 
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium mb-2">
-              Address
-            </label>
-            <input
-              id="address"
-              name="address"
-              defaultValue={event.address}
-              className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-              placeholder="800 Park Offices Dr, Durham, NC 27709"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium mb-2">
-                City
-              </label>
-              <input
-                id="city"
-                name="city"
-                defaultValue={event.city}
-                className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none capitalize"
-                placeholder="Raleigh"
-              />
-            </div>
-            <div>
-              <label htmlFor="region" className="block text-sm font-medium mb-2">
-                Region
-              </label>
-              <input
-                id="region"
-                name="region"
-                defaultValue={event.region}
-                className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none capitalize"
-                placeholder="Downtown Raleigh"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium">Coordinates</span>
-              <div className="relative group">
-                <svg
-                  className="w-4 h-4 text-slate-400 cursor-help"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                  <path strokeWidth="2" d="M12 16v-4M12 8h.01" />
-                </svg>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-700 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  Required for your event to appear on the map
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="latitude" className="block text-sm font-medium mb-2">
-                  Latitude
-                </label>
-                <input
-                  id="latitude"
-                  name="latitude"
-                  type="number"
-                  step="any"
-                  defaultValue={event.coordinates?.lat}
-                  className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-                  placeholder="35.7796"
-                />
-              </div>
-              <div>
-                <label htmlFor="longitude" className="block text-sm font-medium mb-2">
-                  Longitude
-                </label>
-                <input
-                  id="longitude"
-                  name="longitude"
-                  type="number"
-                  step="any"
-                  defaultValue={event.coordinates?.lng}
-                  className="w-full px-4 py-2 rounded bg-slate-800 border border-slate-700 focus:border-blue-500 focus:outline-none"
-                  placeholder="-78.6382"
-                />
-              </div>
-            </div>
-          </div>
+          <AddressLookup
+            defaultAddress={event.address}
+            defaultCity={event.city}
+            defaultRegion={event.region}
+            defaultLatitude={event.coordinates?.lat}
+            defaultLongitude={event.coordinates?.lng}
+          />
         </div>
 
         {/* Additional Details */}
