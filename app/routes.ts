@@ -17,4 +17,5 @@ export default [
   route("api/upload", "routes/api.upload.tsx"),
   route("api/delete-image", "routes/api.delete-image.tsx"),
   route("api/geocode", "routes/api.geocode.tsx"),
+  route("api/list-images", "routes/api.list-images.tsx"),
 ] satisfies RouteConfig;

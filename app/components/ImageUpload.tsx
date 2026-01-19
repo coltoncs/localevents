@@ -1,11 +1,17 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 interface ImageUploadProps {
   currentImageUrl?: string
   onImageUrlChange: (url: string) => void
 }
 
-type InputMode = 'upload' | 'url'
+interface UserImage {
+  url: string
+  pathname: string
+  uploadedAt: string
+}
+
+type InputMode = 'upload' | 'url' | 'gallery'
 
 export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null)
@@ -16,6 +22,43 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Track the blob URL for deletion purposes
   const [uploadedBlobUrl, setUploadedBlobUrl] = useState<string | null>(null)
+  // Gallery state
+  const [userImages, setUserImages] = useState<UserImage[]>([])
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false)
+  const [galleryLoaded, setGalleryLoaded] = useState(false)
+
+  // Load user's images when gallery mode is selected
+  useEffect(() => {
+    if (inputMode === 'gallery' && !galleryLoaded) {
+      loadUserImages()
+    }
+  }, [inputMode, galleryLoaded])
+
+  const loadUserImages = async () => {
+    setIsLoadingGallery(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/list-images')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load images')
+      }
+
+      setUserImages(data.images)
+      setGalleryLoaded(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load images')
+    } finally {
+      setIsLoadingGallery(false)
+    }
+  }
+
+  const handleSelectFromGallery = (url: string) => {
+    setPreview(url)
+    onImageUrlChange(url)
+    setError(null)
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -119,7 +162,7 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
       <label className="block text-sm font-medium">Event Image</label>
 
       {/* Mode toggle */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           type="button"
           onClick={() => setInputMode('upload')}
@@ -130,6 +173,17 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
           }`}
         >
           Upload File
+        </button>
+        <button
+          type="button"
+          onClick={() => setInputMode('gallery')}
+          className={`px-3 py-1.5 text-sm rounded transition-colors ${
+            inputMode === 'gallery'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          My Images
         </button>
         <button
           type="button"
@@ -182,6 +236,36 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
           </svg>
           <span className="text-sm">Click to upload image</span>
           <span className="text-xs">JPEG, PNG, GIF, WebP (max 4.5MB)</span>
+        </div>
+      ) : inputMode === 'gallery' ? (
+        <div className="space-y-2">
+          {isLoadingGallery ? (
+            <div className="flex items-center gap-2 text-slate-400">
+              <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm">Loading your images...</span>
+            </div>
+          ) : userImages.length === 0 ? (
+            <div className="text-slate-400 text-sm py-4">
+              No uploaded images found. Upload an image first to see it here.
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 max-w-md">
+              {userImages.map((image) => (
+                <button
+                  key={image.url}
+                  type="button"
+                  onClick={() => handleSelectFromGallery(image.url)}
+                  className="aspect-square rounded border-2 border-slate-700 hover:border-blue-500 transition-colors overflow-hidden focus:outline-none focus:border-blue-500"
+                >
+                  <img
+                    src={image.url}
+                    alt="Previously uploaded"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex gap-2 max-w-md">

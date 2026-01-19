@@ -215,8 +215,8 @@ export default function EventsList({
 
   return (
     <>
-      <div className="flex-col md:flex md:flex-row justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-white">
+      <div className="flex-col md:flex md:flex-row h-24 justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold text-white mb-3 md:mb-0">
           {showCreateButton ? 'My Events' : 'Upcoming Events'}
         </h2>
         <div className="flex items-center gap-4">
@@ -270,7 +270,7 @@ export default function EventsList({
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
               </svg>
-              {selectedShowFavorites ? 'Favorites' : 'Favorites'}
+              Favorites
             </button>
           )}
           {totalCount > 0 && (
