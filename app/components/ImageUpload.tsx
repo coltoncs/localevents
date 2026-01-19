@@ -26,6 +26,8 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
   const [userImages, setUserImages] = useState<UserImage[]>([])
   const [isLoadingGallery, setIsLoadingGallery] = useState(false)
   const [galleryLoaded, setGalleryLoaded] = useState(false)
+  const [isManageMode, setIsManageMode] = useState(false)
+  const [deletingUrl, setDeletingUrl] = useState<string | null>(null)
 
   // Load user's images when gallery mode is selected
   useEffect(() => {
@@ -55,9 +57,46 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
   }
 
   const handleSelectFromGallery = (url: string) => {
+    if (isManageMode) return // Don't select in manage mode
     setPreview(url)
     onImageUrlChange(url)
     setError(null)
+  }
+
+  const handleDeleteFromGallery = async (url: string) => {
+    if (!confirm('Delete this image permanently? This cannot be undone.')) {
+      return
+    }
+
+    setDeletingUrl(url)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('url', url)
+      const response = await fetch('/api/delete-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete image')
+      }
+
+      // Remove from local state
+      setUserImages((prev) => prev.filter((img) => img.url !== url))
+
+      // If this was the currently selected image, clear it
+      if (preview === url) {
+        setPreview(null)
+        onImageUrlChange('')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete image')
+    } finally {
+      setDeletingUrl(null)
+    }
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,7 +277,7 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
           <span className="text-xs">JPEG, PNG, GIF, WebP (max 4.5MB)</span>
         </div>
       ) : inputMode === 'gallery' ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {isLoadingGallery ? (
             <div className="flex items-center gap-2 text-slate-400">
               <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
@@ -249,22 +288,58 @@ export function ImageUpload({ currentImageUrl, onImageUrlChange }: ImageUploadPr
               No uploaded images found. Upload an image first to see it here.
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-2 max-w-md">
-              {userImages.map((image) => (
+            <>
+              <div className="flex items-center justify-between max-w-md">
+                <span className="text-sm text-slate-400">
+                  {isManageMode ? 'Click an image to delete it' : 'Click an image to select it'}
+                </span>
                 <button
-                  key={image.url}
                   type="button"
-                  onClick={() => handleSelectFromGallery(image.url)}
-                  className="aspect-square rounded border-2 border-slate-700 hover:border-blue-500 transition-colors overflow-hidden focus:outline-none focus:border-blue-500"
+                  onClick={() => setIsManageMode(!isManageMode)}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    isManageMode
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
                 >
-                  <img
-                    src={image.url}
-                    alt="Previously uploaded"
-                    className="w-full h-full object-cover"
-                  />
+                  {isManageMode ? 'Done' : 'Manage'}
                 </button>
-              ))}
-            </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 max-w-md">
+                {userImages.map((image) => (
+                  <div key={image.url} className="relative group">
+                    <button
+                      type="button"
+                      onClick={() => isManageMode ? handleDeleteFromGallery(image.url) : handleSelectFromGallery(image.url)}
+                      disabled={deletingUrl === image.url}
+                      className={`aspect-square rounded border-2 transition-colors overflow-hidden focus:outline-none w-full ${
+                        isManageMode
+                          ? 'border-red-500/50 hover:border-red-500'
+                          : 'border-slate-700 hover:border-blue-500 focus:border-blue-500'
+                      } ${deletingUrl === image.url ? 'opacity-50' : ''}`}
+                    >
+                      <img
+                        src={image.url}
+                        alt="Previously uploaded"
+                        className="w-full h-full object-cover"
+                      />
+                      {isManageMode && (
+                        <div className="absolute inset-0 bg-red-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </div>
+                      )}
+                      {deletingUrl === image.url && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       ) : (
