@@ -12,6 +12,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "set-admin": "tsx scripts/set-admin.ts",
+    "dedupe-events": "tsx scripts/dedupe-events.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
