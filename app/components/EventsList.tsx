@@ -97,6 +97,7 @@ export default function EventsList({
   const [selectedShowFavorites, setSelectedShowFavorites] = useState(showFavorites)
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
 
   const userVotesSet = new Set(userVotes)
 
@@ -361,8 +362,36 @@ export default function EventsList({
           </form>
 
           {/* Filters */}
-          <div className="mb-6 p-4 bg-slate-800/80 border border-slate-600 rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="mb-6 bg-slate-800/80 border border-slate-600 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-700/50 transition-colors rounded-lg"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span className="text-sm font-medium text-slate-300">Filters</span>
+                {hasActiveFilters && (
+                  <span className="px-2 py-0.5 bg-blue-600/30 text-blue-300 border border-blue-600/50 rounded-full text-xs">
+                    Active
+                  </span>
+                )}
+              </div>
+              <svg
+                className={`w-5 h-5 text-slate-400 transition-transform ${filtersExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {filtersExpanded && (
+              <div className="px-4 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {allCategories.length > 0 && (
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-slate-300 mb-2">
@@ -503,12 +532,12 @@ export default function EventsList({
                   )}
                   {startDate && (
                     <span className="px-3 py-1 bg-orange-600/30 text-orange-300 border border-orange-600/50 rounded-full text-sm">
-                      From: {new Date(startDate).toLocaleDateString()}
+                      From: {new Date(startDate + 'T00:00:00').toLocaleDateString()}
                     </span>
                   )}
                   {endDate && (
                     <span className="px-3 py-1 bg-orange-600/30 text-orange-300 border border-orange-600/50 rounded-full text-sm">
-                      To: {new Date(endDate).toLocaleDateString()}
+                      To: {new Date(endDate + 'T00:00:00').toLocaleDateString()}
                     </span>
                   )}
                 </div>
@@ -519,6 +548,8 @@ export default function EventsList({
                 >
                   Clear All Filters
                 </button>
+              </div>
+            )}
               </div>
             )}
           </div>
