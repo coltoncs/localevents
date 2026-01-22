@@ -15,6 +15,7 @@ interface EventWithCoords {
   latitude: number
   longitude: number
   date: string
+  times?: string
   cost?: string
   categories: string[]
   city?: string
@@ -36,6 +37,7 @@ export async function loader(_args: Route.LoaderArgs) {
       latitude: e.coordinates!.lat,
       longitude: e.coordinates!.lng,
       date: e.date,
+      times: e.times,
       cost: e.cost,
       categories: e.categories || [],
       city: e.city,
@@ -65,8 +67,9 @@ export default function MapPage() {
   const [viewState, setViewState] = useState({
     longitude: -78.6382,
     latitude: 35.7796,
-    zoom: 12,
+    zoom: 10,
   })
+  const TARGET_ZOOM = 12
 
   // Get today's date in YYYY-MM-DD format for the date input
   const today = useMemo(() => {
@@ -192,14 +195,16 @@ export default function MapPage() {
     })
   }, [viewState.zoom])
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+  const formatDate = (dateStr: string, times?: string) => {
+    const dateFormatted = new Date(dateStr).toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
     })
+    if (times) {
+      return `${dateFormatted} · ${times}`
+    }
+    return dateFormatted
   }
 
   if (!mapboxToken) {
@@ -220,6 +225,15 @@ export default function MapPage() {
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         onClick={() => setSelectedEvents([])}
+        onLoad={() => {
+          setTimeout(() => {
+            mapRef.current?.easeTo({
+              zoom: TARGET_ZOOM,
+              duration: 1500,
+              easing: easeOutCubic,
+            })
+          }, 100)
+        }}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/dark-v11"
         mapboxAccessToken={mapboxToken}
@@ -358,7 +372,7 @@ export default function MapPage() {
                       {event.description}
                     </p>
                     <div className="text-xs text-slate-400 space-y-1">
-                      <p>{formatDate(event.date)}</p>
+                      <p>{formatDate(event.date, event.times)}</p>
                       <p>{event.location}</p>
                       {event.cost && (
                         <p className="font-medium text-emerald-400">
