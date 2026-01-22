@@ -19,6 +19,7 @@ interface EventWithCoords {
   cost?: string
   categories: string[]
   city?: string
+  imageUrl?: string
 }
 
 export async function loader(_args: Route.LoaderArgs) {
@@ -41,6 +42,7 @@ export async function loader(_args: Route.LoaderArgs) {
       cost: e.cost,
       categories: e.categories || [],
       city: e.city,
+      imageUrl: e.imageUrl,
     }))
 
   return {
@@ -219,7 +221,7 @@ export default function MapPage() {
   }
 
   return (
-    <main className="relative h-[calc(100vh-4rem)] w-full">
+    <main className="relative h-[calc(100vh-4rem)] w-full overflow-hidden">
       <Map
         ref={mapRef}
         {...viewState}
@@ -365,6 +367,13 @@ export default function MapPage() {
                 const event = selectedEvents[activeTabIndex]
                 return (
                   <>
+                    {event.imageUrl && (
+                      <img
+                        src={event.imageUrl}
+                        alt={event.title}
+                        className="w-full h-32 object-cover rounded-md mb-2 -mt-1"
+                      />
+                    )}
                     <h3 className="font-bold text-slate-200 text-lg mb-1">
                       {event.title}
                     </h3>
