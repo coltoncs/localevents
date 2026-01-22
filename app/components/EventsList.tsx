@@ -45,6 +45,7 @@ interface EventsListProps {
     favorites?: boolean
   }) => void
   onPageChange?: (page: number) => void
+  onPerPageChange?: (perPage: number) => void
   onSelectEvent?: (event: Event) => void
   showFilters?: boolean
   showCreateButton?: boolean
@@ -75,6 +76,7 @@ export default function EventsList({
   onSearch,
   onFilterChange,
   onPageChange,
+  onPerPageChange,
   onSelectEvent,
   showFilters = true,
   showCreateButton = false,
@@ -221,9 +223,24 @@ export default function EventsList({
         </h2>
         <div className="flex items-center gap-4">
           {totalCount > 0 && (
-            <p className="text-slate-400 text-sm hidden md:block">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalCount)} of {totalCount} events
-            </p>
+            <div className="hidden md:flex items-center gap-3">
+              <p className="text-slate-400 text-sm">
+                Showing {startIndex + 1}-{Math.min(endIndex, totalCount)} of {totalCount} events
+              </p>
+              {onPerPageChange && (
+                <select
+                  value={eventsPerPage}
+                  onChange={(e) => onPerPageChange(parseInt(e.target.value, 10))}
+                  disabled={isLoading}
+                  className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-300 text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              )}
+            </div>
           )}
           {enableBulkDelete && viewMode === 'table' && selectedEventIds.size > 0 && (
             <button

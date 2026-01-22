@@ -19,7 +19,8 @@ export async function loader(args: Route.LoaderArgs) {
   const startDate = url.searchParams.get('startDate') || undefined
   const endDate = url.searchParams.get('endDate') || undefined
   const showFavorites = url.searchParams.get('favorites') === 'true'
-  const limit = 10
+  const perPageParam = parseInt(url.searchParams.get('perPage') || '10', 10)
+  const limit = [10, 25, 50, 100].includes(perPageParam) ? perPageParam : 10
 
   // Get current user ID (if signed in)
   const { userId } = await getAuth(args)
@@ -119,9 +120,10 @@ export default function EventsPage() {
     startDate?: string
     endDate?: string
     favorites?: boolean
-  }, page: number = 1) => {
+  }, page: number = 1, perPage: number = eventsPerPage) => {
     const params = new URLSearchParams()
     params.set('page', page.toString())
+    if (perPage !== 10) params.set('perPage', perPage.toString())
     if (filters.search) params.set('search', filters.search)
     if (filters.category) params.set('category', filters.category)
     if (filters.price && filters.price !== 'all') params.set('price', filters.price)
@@ -146,12 +148,25 @@ export default function EventsPage() {
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams()
     params.set('page', page.toString())
+    if (eventsPerPage !== 10) params.set('perPage', eventsPerPage.toString())
     if (searchQuery) params.set('search', searchQuery)
     if (category) params.set('category', category)
     if (priceFilter && priceFilter !== 'all') params.set('price', priceFilter)
     if (startDate) params.set('startDate', startDate)
     if (endDate) params.set('endDate', endDate)
     if (showFavorites) params.set('favorites', 'true')
+    navigate(`/events?${params.toString()}`)
+  }
+
+  const handlePerPageChange = (perPage: number) => {
+    const params = buildFilterParams({
+      search: searchQuery || undefined,
+      category: category || undefined,
+      price: priceFilter,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      favorites: showFavorites || undefined,
+    }, 1, perPage)
     navigate(`/events?${params.toString()}`)
   }
 
@@ -199,6 +214,7 @@ export default function EventsPage() {
             canEditEvent={canEditEvent}
             onFilterChange={handleFilterChange}
             onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
             onSelectEvent={(event) => selectEvent(event as any)}
             showFilters={true}
             showCreateButton={false}
