@@ -124,7 +124,7 @@ export async function getPaginatedEvents(
     whereConditions.push({
       AND: [
         { cost: { not: null } },
-        { cost: { not: { contains: 'free', mode: 'insensitive' as const } } },
+        { cost: { not: { contains: 'free' }, mode: 'insensitive' as const } },
       ],
     })
   }

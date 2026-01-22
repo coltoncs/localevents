@@ -306,7 +306,7 @@ export default function EventsList({
         </div>
       </div>
       
-      {showFilters && totalCount > 0 && false && (
+      {showFilters && totalCount > 0 && (
         <>
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="mb-6">
@@ -356,8 +356,18 @@ export default function EventsList({
                     value={selectedCategory}
                     disabled={isLoading}
                     onChange={(e) => {
-                      setSelectedCategory(e.target.value)
-                      setTimeout(handleFilterChange, 0)
+                      const newValue = e.target.value
+                      setSelectedCategory(newValue)
+                      if (onFilterChange) {
+                        onFilterChange({
+                          search: searchInput.trim() || undefined,
+                          category: newValue || undefined,
+                          price: selectedPrice !== 'all' ? selectedPrice : undefined,
+                          startDate: selectedStartDate || undefined,
+                          endDate: selectedEndDate || undefined,
+                          favorites: selectedShowFavorites || undefined,
+                        })
+                      }
                     }}
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -380,8 +390,18 @@ export default function EventsList({
                   value={selectedPrice}
                   disabled={isLoading}
                   onChange={(e) => {
-                    setSelectedPrice(e.target.value as 'free' | 'paid' | 'all')
-                    setTimeout(handleFilterChange, 0)
+                    const newValue = e.target.value as 'free' | 'paid' | 'all'
+                    setSelectedPrice(newValue)
+                    if (onFilterChange) {
+                      onFilterChange({
+                        search: searchInput.trim() || undefined,
+                        category: selectedCategory || undefined,
+                        price: newValue !== 'all' ? newValue : undefined,
+                        startDate: selectedStartDate || undefined,
+                        endDate: selectedEndDate || undefined,
+                        favorites: selectedShowFavorites || undefined,
+                      })
+                    }
                   }}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -401,8 +421,18 @@ export default function EventsList({
                   value={selectedStartDate}
                   disabled={isLoading}
                   onChange={(e) => {
-                    setSelectedStartDate(e.target.value)
-                    setTimeout(handleFilterChange, 0)
+                    const newValue = e.target.value
+                    setSelectedStartDate(newValue)
+                    if (onFilterChange) {
+                      onFilterChange({
+                        search: searchInput.trim() || undefined,
+                        category: selectedCategory || undefined,
+                        price: selectedPrice !== 'all' ? selectedPrice : undefined,
+                        startDate: newValue || undefined,
+                        endDate: selectedEndDate || undefined,
+                        favorites: selectedShowFavorites || undefined,
+                      })
+                    }
                   }}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
@@ -418,8 +448,18 @@ export default function EventsList({
                   value={selectedEndDate}
                   disabled={isLoading}
                   onChange={(e) => {
-                    setSelectedEndDate(e.target.value)
-                    setTimeout(handleFilterChange, 0)
+                    const newValue = e.target.value
+                    setSelectedEndDate(newValue)
+                    if (onFilterChange) {
+                      onFilterChange({
+                        search: searchInput.trim() || undefined,
+                        category: selectedCategory || undefined,
+                        price: selectedPrice !== 'all' ? selectedPrice : undefined,
+                        startDate: selectedStartDate || undefined,
+                        endDate: newValue || undefined,
+                        favorites: selectedShowFavorites || undefined,
+                      })
+                    }
                   }}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
