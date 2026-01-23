@@ -67,6 +67,7 @@ export default function EventRoutePanel({
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false)
   const [nearbyEvents, setNearbyEvents] = useState<(EventWithCoords & { distance: number })[]>([])
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+  const [eventCount, setEventCount] = useState(10)
   const [transportMode, setTransportMode] = useState<TransportMode>('driving')
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false)
   const [routeError, setRouteError] = useState<string | null>(null)
@@ -98,6 +99,7 @@ export default function EventRoutePanel({
       setStep('location')
       setNearbyEvents([])
       setSelectedEventIds(new Set())
+      setEventCount(10)
       setRouteSummary(null)
     }
 
@@ -261,6 +263,16 @@ export default function EventRoutePanel({
     })
   }, [])
 
+  // Load more events
+  const handleLoadMoreEvents = useCallback(() => {
+    if (!startLocation) return
+    const newCount = eventCount + 5
+    setEventCount(newCount)
+    const moreEvents = findNearestEvents(startLocation, newCount)
+    // Keep existing selections, only add new events as unselected
+    setNearbyEvents(moreEvents)
+  }, [startLocation, eventCount, findNearestEvents])
+
   // Generate route
   const handleGenerateRoute = useCallback(async () => {
     if (!startLocation || selectedEventIds.size < 2) return
@@ -331,6 +343,7 @@ export default function EventRoutePanel({
     setCityInput('')
     setNearbyEvents([])
     setSelectedEventIds(new Set())
+    setEventCount(10)
     setRouteError(null)
     setRouteSummary(null)
   }, [onRouteClear, userLocation])
@@ -504,11 +517,27 @@ export default function EventRoutePanel({
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-medium text-sm truncate">{event.title}</p>
                         <p className="text-slate-400 text-xs truncate">{event.location}</p>
-                        <p className="text-slate-500 text-xs">{(event.distance * 0.621371).toFixed(1)} mi away</p>
+                        <div className="flex items-center gap-2 text-slate-500 text-xs">
+                          {event.times && <span>{event.times}</span>}
+                          <span>{(event.distance * 0.621371).toFixed(1)} mi away</span>
+                        </div>
                       </div>
                     </div>
                   </label>
                 ))}
+
+                {/* Load More Events button */}
+                {nearbyEvents.length < events.length && (
+                  <button
+                    onClick={handleLoadMoreEvents}
+                    className="w-full px-3 py-2 text-sm text-blue-400 hover:text-blue-300 border border-dashed border-slate-600 hover:border-slate-500 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Load More Events
+                  </button>
+                )}
               </div>
             )}
 
