@@ -460,16 +460,38 @@ export default function MapPage() {
           </Popup>
         )}
 
-        {/* Route line */}
+        {/* Route line with outline */}
         {routeData && (
-          <Source id="event-route" type="geojson" data={routeData}>
+          <Source id="event-route" type="geojson" data={routeData} lineMetrics={true}>
+            {/* Outline/stroke layer */}
+            <Layer
+              id="route-line-outline"
+              type="line"
+              paint={{
+                'line-color': 'rgba(0, 0, 0, 0.8)',
+                'line-width': 8,
+                'line-opacity': 0.5,
+              }}
+              layout={{
+                'line-join': 'round',
+                'line-cap': 'round',
+              }}
+            />
+            {/* Main gradient line */}
             <Layer
               id="route-line"
               type="line"
               paint={{
-                'line-color': '#3b82f6',
-                'line-width': 4,
-                'line-opacity': 0.8,
+                'line-width': 5,
+                'line-opacity': 0.5,
+                'line-gradient': [
+                  'interpolate',
+                  ['linear'],
+                  ['line-progress'],
+                  0, '#22c55e',    // green-500 at start
+                  0.5, '#3b82f6',  // blue-500 at middle
+                  1, '#9333ea',    // purple-600 at end
+                ],
               }}
               layout={{
                 'line-join': 'round',
