@@ -86,6 +86,11 @@ export default function MapPage() {
   const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false)
   const [routeData, setRouteData] = useState<RouteGeoJSON | null>(null)
   const [routeEvents, setRouteEvents] = useState<EventWithCoords[]>([])
+  const [routeSummary, setRouteSummary] = useState<{
+    distance: number
+    duration: number
+    legs: { distance: number; duration: number }[]
+  } | null>(null)
 
   // Filter events to only show events on the selected date
   const filteredEvents = useMemo(() => {
@@ -220,9 +225,13 @@ export default function MapPage() {
   const handleRouteGenerated = useCallback((
     routeGeoJSON: RouteGeoJSON,
     orderedEvents: EventWithCoords[],
+    totalDistance: number,
+    totalDuration: number,
+    legs: { distance: number; duration: number }[],
   ) => {
     setRouteData(routeGeoJSON)
     setRouteEvents(orderedEvents)
+    setRouteSummary({ distance: totalDistance, duration: totalDuration, legs })
 
     // Fit map to show the entire route
     if (orderedEvents.length > 0 && mapRef.current) {
@@ -239,6 +248,7 @@ export default function MapPage() {
   const handleRouteClear = useCallback(() => {
     setRouteData(null)
     setRouteEvents([])
+    setRouteSummary(null)
   }, [])
 
   if (!mapboxToken) {
@@ -283,6 +293,20 @@ export default function MapPage() {
             })
           }}
         />
+
+        {/* Route waypoint markers */}
+        {routeEvents.map((event, index) => (
+          <Marker
+            key={`route-marker-${event.id}`}
+            longitude={event.longitude}
+            latitude={event.latitude}
+            anchor="center"
+          >
+            <div className="w-7 h-7 bg-purple-600 rounded-full shadow-lg flex items-center justify-center absolute -m-1">
+              <span className="text-white text-xs font-bold">{index + 1}</span>
+            </div>
+          </Marker>
+        ))}
 
         {clusters.map(cluster => {
           const [longitude, latitude] = cluster.geometry.coordinates
@@ -454,20 +478,6 @@ export default function MapPage() {
             />
           </Source>
         )}
-
-        {/* Route waypoint markers */}
-        {routeEvents.map((event, index) => (
-          <Marker
-            key={`route-marker-${event.id}`}
-            longitude={event.longitude}
-            latitude={event.latitude}
-            anchor="center"
-          >
-            <div className="w-7 h-7 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
-              <span className="text-white text-xs font-bold">{index + 1}</span>
-            </div>
-          </Marker>
-        ))}
       </Map>
 
       {/* Filter controls */}
@@ -484,6 +494,10 @@ export default function MapPage() {
             onChange={(e) => {
               setFilterDate(e.target.value)
               setSelectedEvents([])
+              // Clear route when date changes
+              setRouteData(null)
+              setRouteEvents([])
+              setRouteSummary(null)
             }}
             className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -571,8 +585,11 @@ export default function MapPage() {
         onClose={() => setIsRoutePanelOpen(false)}
         events={filteredEvents}
         userLocation={userLocation}
+        currentRouteEvents={routeEvents}
+        currentRouteSummary={routeSummary}
         onRouteGenerated={handleRouteGenerated}
         onRouteClear={handleRouteClear}
+        onUserLocationObtained={setUserLocation}
       />
     </main>
   )

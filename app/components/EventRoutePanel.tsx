@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import type { TransportMode, DirectionsResponse, RouteGeoJSON } from '~/types/directions'
 
 interface EventWithCoords {
@@ -16,11 +16,19 @@ interface EventWithCoords {
   imageUrl?: string
 }
 
+interface RouteSummary {
+  distance: number
+  duration: number
+  legs: { distance: number; duration: number }[]
+}
+
 interface EventRoutePanelProps {
   isOpen: boolean
   onClose: () => void
   events: EventWithCoords[]
   userLocation: { longitude: number; latitude: number } | null
+  currentRouteEvents: EventWithCoords[]
+  currentRouteSummary: RouteSummary | null
   onRouteGenerated: (
     routeData: RouteGeoJSON,
     orderedEvents: EventWithCoords[],
@@ -29,6 +37,7 @@ interface EventRoutePanelProps {
     legs: { distance: number; duration: number }[]
   ) => void
   onRouteClear: () => void
+  onUserLocationObtained?: (location: { longitude: number; latitude: number }) => void
 }
 
 type Step = 'location' | 'events' | 'transport' | 'route'
@@ -38,10 +47,16 @@ export default function EventRoutePanel({
   onClose,
   events,
   userLocation,
+  currentRouteEvents,
+  currentRouteSummary,
   onRouteGenerated,
   onRouteClear,
+  onUserLocationObtained,
 }: EventRoutePanelProps) {
-  const [step, setStep] = useState<Step>('location')
+  // Determine initial step based on whether there's an existing route
+  const hasExistingRoute = currentRouteEvents.length > 0 && currentRouteSummary !== null
+
+  const [step, setStep] = useState<Step>(hasExistingRoute ? 'route' : 'location')
   const [startLocation, setStartLocation] = useState<{ lng: number; lat: number } | null>(
     userLocation ? { lng: userLocation.longitude, lat: userLocation.latitude } : null
   )
@@ -60,6 +75,34 @@ export default function EventRoutePanel({
     duration: number
     legs: { distance: number; duration: number }[]
   } | null>(null)
+
+  // Sync step when panel opens with existing route
+  useEffect(() => {
+    if (isOpen) {
+      if (currentRouteEvents.length > 0 && currentRouteSummary) {
+        setStep('route')
+      }
+    }
+  }, [isOpen, currentRouteEvents.length, currentRouteSummary])
+
+  // Track previous events to detect date changes
+  const prevEventsRef = useRef<string>('')
+
+  // Reset panel state when events change (e.g., date filter changed)
+  useEffect(() => {
+    // Create a simple hash of event IDs to detect changes
+    const eventsHash = events.map(e => e.id).sort().join(',')
+
+    if (prevEventsRef.current && prevEventsRef.current !== eventsHash) {
+      // Events actually changed - reset to location step
+      setStep('location')
+      setNearbyEvents([])
+      setSelectedEventIds(new Set())
+      setRouteSummary(null)
+    }
+
+    prevEventsRef.current = eventsHash
+  }, [events])
 
   // Haversine distance calculation
   const getDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -131,6 +174,9 @@ export default function EventRoutePanel({
         setStartLocation(loc)
         setIsGettingLocation(false)
 
+        // Notify parent of obtained location
+        onUserLocationObtained?.({ longitude: loc.lng, latitude: loc.lat })
+
         // Find nearby events
         const nearby = findNearestEvents(loc)
         setNearbyEvents(nearby)
@@ -155,7 +201,7 @@ export default function EventRoutePanel({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
-  }, [findNearestEvents])
+  }, [findNearestEvents, onUserLocationObtained])
 
   // Handle address geocoding
   const handleLookupAddress = useCallback(async () => {
@@ -270,8 +316,14 @@ export default function EventRoutePanel({
     }
   }, [startLocation, selectedEventIds, nearbyEvents, orderEventsByProximity, transportMode, onRouteGenerated])
 
-  // Reset and close
+  // Just close the panel (preserve route if it exists)
   const handleClose = useCallback(() => {
+    onClose()
+  }, [onClose])
+
+  // Clear route and start over
+  const handleClearRoute = useCallback(() => {
+    onRouteClear()
     setStep('location')
     setStartLocation(userLocation ? { lng: userLocation.longitude, lat: userLocation.latitude } : null)
     setLocationError(null)
@@ -281,15 +333,12 @@ export default function EventRoutePanel({
     setSelectedEventIds(new Set())
     setRouteError(null)
     setRouteSummary(null)
-    onClose()
-  }, [userLocation, onClose])
+  }, [onRouteClear, userLocation])
 
-  // Clear route and go back
-  const handleClearRoute = useCallback(() => {
-    onRouteClear()
+  // Modify existing route (go back to events step)
+  const handleModifyRoute = useCallback(() => {
     setStep('events')
-    setRouteSummary(null)
-  }, [onRouteClear])
+  }, [])
 
   // Format distance (in miles)
   const formatDistance = (meters: number) => {
@@ -541,57 +590,63 @@ export default function EventRoutePanel({
         )}
 
         {/* Step 4: Route Summary */}
-        {step === 'route' && routeSummary && (
+        {step === 'route' && (currentRouteSummary || routeSummary) && (
           <div className="space-y-4">
-            <div className="bg-slate-700/50 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-300 text-sm">Total Distance</span>
-                <span className="text-white font-semibold">{formatDistance(routeSummary.distance)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300 text-sm">Estimated Time</span>
-                <span className="text-white font-semibold">{formatDuration(routeSummary.duration)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-slate-400 text-xs uppercase tracking-wide">Route Order</p>
-              {nearbyEvents
-                .filter(e => selectedEventIds.has(e.id))
-                .map((event, index) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center gap-3 p-2 bg-slate-700/30 rounded-lg"
-                  >
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      {index + 1}
+            {(() => {
+              const summary = currentRouteSummary || routeSummary!
+              const routeEventsList = currentRouteEvents.length > 0 ? currentRouteEvents : nearbyEvents.filter(e => selectedEventIds.has(e.id))
+              return (
+                <>
+                  <div className="bg-slate-700/50 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-slate-300 text-sm">Total Distance</span>
+                      <span className="text-white font-semibold">{formatDistance(summary.distance)}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm truncate">{event.title}</p>
-                      {routeSummary.legs[index] && (
-                        <p className="text-slate-400 text-xs">
-                          {formatDistance(routeSummary.legs[index].distance)} &middot; {formatDuration(routeSummary.legs[index].duration)}
-                        </p>
-                      )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-300 text-sm">Estimated Time</span>
+                      <span className="text-white font-semibold">{formatDuration(summary.duration)}</span>
                     </div>
                   </div>
-                ))}
-            </div>
 
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={handleClearRoute}
-                className="flex-1 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
-              >
-                Modify
-              </button>
-              <button
-                onClick={handleClose}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Done
-              </button>
-            </div>
+                  <div className="space-y-2">
+                    <p className="text-slate-400 text-xs uppercase tracking-wide">Route Order</p>
+                    {routeEventsList.map((event, index) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center gap-3 p-2 bg-slate-700/30 rounded-lg"
+                      >
+                        <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm truncate">{event.title}</p>
+                          {summary.legs[index] && (
+                            <p className="text-slate-400 text-xs">
+                              {formatDistance(summary.legs[index].distance)} &middot; {formatDuration(summary.legs[index].duration)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={handleClearRoute}
+                      className="flex-1 px-4 py-2 bg-red-600/80 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      Clear Route
+                    </button>
+                    <button
+                      onClick={handleClose}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
       </div>
