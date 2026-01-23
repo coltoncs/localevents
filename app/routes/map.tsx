@@ -210,7 +210,7 @@ export default function MapPage() {
   }, [viewState.zoom])
 
   const formatDate = (dateStr: string, times?: string) => {
-    const dateFormatted = new Date(dateStr).toLocaleDateString('en-US', {
+    const dateFormatted = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
