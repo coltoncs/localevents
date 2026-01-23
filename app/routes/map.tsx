@@ -1,10 +1,12 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { useLoaderData, useNavigate } from 'react-router'
-import Map, { Marker, Popup, NavigationControl, GeolocateControl } from 'react-map-gl/mapbox'
+import Map, { Marker, Popup, NavigationControl, GeolocateControl, Source, Layer } from 'react-map-gl/mapbox'
 import type { MapRef } from 'react-map-gl/mapbox'
 import useSupercluster from 'use-supercluster'
 import type { Route } from './+types/map'
 import { getAllEvents } from '~/utils/events.server'
+import EventRoutePanel from '~/components/EventRoutePanel'
+import type { RouteGeoJSON } from '~/types/directions'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 interface EventWithCoords {
@@ -79,6 +81,11 @@ export default function MapPage() {
   }, [])
 
   const [filterDate, setFilterDate] = useState(today)
+
+  // Route planning state
+  const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false)
+  const [routeData, setRouteData] = useState<RouteGeoJSON | null>(null)
+  const [routeEvents, setRouteEvents] = useState<EventWithCoords[]>([])
 
   // Filter events to only show events on the selected date
   const filteredEvents = useMemo(() => {
@@ -208,6 +215,31 @@ export default function MapPage() {
     }
     return dateFormatted
   }
+
+  // Route planning handlers
+  const handleRouteGenerated = useCallback((
+    routeGeoJSON: RouteGeoJSON,
+    orderedEvents: EventWithCoords[],
+  ) => {
+    setRouteData(routeGeoJSON)
+    setRouteEvents(orderedEvents)
+
+    // Fit map to show the entire route
+    if (orderedEvents.length > 0 && mapRef.current) {
+      const lngs = orderedEvents.map(e => e.longitude)
+      const lats = orderedEvents.map(e => e.latitude)
+      const bounds: [[number, number], [number, number]] = [
+        [Math.min(...lngs) - 0.01, Math.min(...lats) - 0.01],
+        [Math.max(...lngs) + 0.01, Math.max(...lats) + 0.01],
+      ]
+      mapRef.current.fitBounds(bounds, { padding: 80, duration: 1000 })
+    }
+  }, [])
+
+  const handleRouteClear = useCallback(() => {
+    setRouteData(null)
+    setRouteEvents([])
+  }, [])
 
   if (!mapboxToken) {
     return (
@@ -403,6 +435,39 @@ export default function MapPage() {
             </div>
           </Popup>
         )}
+
+        {/* Route line */}
+        {routeData && (
+          <Source id="event-route" type="geojson" data={routeData}>
+            <Layer
+              id="route-line"
+              type="line"
+              paint={{
+                'line-color': '#3b82f6',
+                'line-width': 4,
+                'line-opacity': 0.8,
+              }}
+              layout={{
+                'line-join': 'round',
+                'line-cap': 'round',
+              }}
+            />
+          </Source>
+        )}
+
+        {/* Route waypoint markers */}
+        {routeEvents.map((event, index) => (
+          <Marker
+            key={`route-marker-${event.id}`}
+            longitude={event.longitude}
+            latitude={event.latitude}
+            anchor="center"
+          >
+            <div className="w-7 h-7 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
+              <span className="text-white text-xs font-bold">{index + 1}</span>
+            </div>
+          </Marker>
+        ))}
       </Map>
 
       {/* Filter controls */}
@@ -487,6 +552,28 @@ export default function MapPage() {
           )}
         </div>
       </div>
+
+      {/* Route planning button */}
+      <button
+        onClick={() => setIsRoutePanelOpen(true)}
+        disabled={filteredEvents.length < 2}
+        className="absolute bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        title={filteredEvents.length < 2 ? 'Need at least 2 events to plan a route' : 'Plan an event route'}
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
+      </button>
+
+      {/* Route planning panel */}
+      <EventRoutePanel
+        isOpen={isRoutePanelOpen}
+        onClose={() => setIsRoutePanelOpen(false)}
+        events={filteredEvents}
+        userLocation={userLocation}
+        onRouteGenerated={handleRouteGenerated}
+        onRouteClear={handleRouteClear}
+      />
     </main>
   )
 }
