@@ -5,8 +5,6 @@ import { toast } from 'sonner'
 import type { Route } from './+types/admin'
 import { canUserManageAuthors } from '~/utils/permissions.server'
 import { getPendingApplications, getAllApplications, approveApplication, rejectApplication } from '~/utils/author-applications.server'
-import { bulkCreateEvents } from '~/utils/events.server'
-import { transformApiEvents } from '~/utils/transformApiData'
 import ShaderBackground from '~/components/ShaderBackground'
 import { useRoleSimulationStore } from '~/stores'
 import { useUserRole } from '~/hooks/useUserRole'
@@ -48,51 +46,6 @@ export async function action(args: Route.ActionArgs) {
   const formData = await args.request.formData()
   const action = formData.get('action') as string
 
-  // Handle bulk event upload
-  if (action === 'bulkUpload') {
-    const file = formData.get('eventsFile') as File
-
-    if (!file) {
-      return { error: 'No file uploaded' }
-    }
-
-    try {
-      const text = await file.text()
-      const jsonData = JSON.parse(text)
-
-      if (!Array.isArray(jsonData)) {
-        return { error: 'Invalid JSON format: Expected an array of events' }
-      }
-
-      // Transform API events to app format
-      const transformedEvents = transformApiEvents(jsonData)
-
-      // Set createdBy to the admin's userId
-      const eventsWithCreator = transformedEvents.map(event => ({
-        ...event,
-        createdBy: userId
-      }))
-
-      // Remove the 'id' field as it will be auto-generated
-      const eventsToCreate = eventsWithCreator.map(({ id, ...rest }) => rest)
-
-      // Bulk create events
-      const result = await bulkCreateEvents(eventsToCreate)
-
-      if (result.failed > 0) {
-        return {
-          success: `Uploaded ${result.success} events successfully. ${result.failed} failed.`,
-          errors: result.errors
-        }
-      }
-
-      return { success: `Successfully uploaded ${result.success} events!` }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return { error: `Failed to process file: ${errorMessage}` }
-    }
-  }
-
   // Handle author application actions
   const applicationId = formData.get('applicationId') as string
   const notes = formData.get('notes') as string
@@ -122,6 +75,212 @@ export function meta({}: Route.MetaArgs) {
     { title: '919 Events - Admin Dashboard' },
     { name: 'description', content: 'Manage author applications' },
   ]
+}
+
+const CHUNK_SIZE = 10 // Events per chunk to avoid Vercel timeout
+
+function BulkUploadTab() {
+  const [isUploading, setIsUploading] = useState(false)
+  const [progress, setProgress] = useState({ current: 0, total: 0, success: 0, failed: 0 })
+  const [errors, setErrors] = useState<string[]>([])
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setProgress({ current: 0, total: 0, success: 0, failed: 0 })
+    setErrors([])
+
+    try {
+      const text = await file.text()
+      const jsonData = JSON.parse(text)
+
+      if (!Array.isArray(jsonData)) {
+        toast.error('Invalid JSON format: Expected an array of events')
+        setIsUploading(false)
+        return
+      }
+
+      const totalEvents = jsonData.length
+      const totalChunks = Math.ceil(totalEvents / CHUNK_SIZE)
+      let totalSuccess = 0
+      let totalFailed = 0
+      const allErrors: string[] = []
+
+      setProgress({ current: 0, total: totalChunks, success: 0, failed: 0 })
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = jsonData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
+
+        try {
+          const response = await fetch('/api/bulk-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              events: chunk,
+              chunkIndex: i,
+              totalChunks,
+            }),
+          })
+
+          const result = await response.json()
+
+          if (result.error) {
+            allErrors.push(`Chunk ${i + 1}: ${result.error}`)
+            totalFailed += chunk.length
+          } else {
+            totalSuccess += result.success
+            totalFailed += result.failed
+            if (result.errors) {
+              allErrors.push(...result.errors)
+            }
+          }
+        } catch {
+          allErrors.push(`Chunk ${i + 1}: Network error`)
+          totalFailed += chunk.length
+        }
+
+        setProgress({
+          current: i + 1,
+          total: totalChunks,
+          success: totalSuccess,
+          failed: totalFailed,
+        })
+      }
+
+      setErrors(allErrors)
+
+      if (totalFailed === 0) {
+        toast.success(`Successfully uploaded ${totalSuccess} events!`)
+      } else {
+        toast.warning(`Uploaded ${totalSuccess} events. ${totalFailed} failed.`)
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to process file: ${errorMessage}`)
+    } finally {
+      setIsUploading(false)
+      // Reset the file input
+      e.target.value = ''
+    }
+  }
+
+  const progressPercent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
+
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-semibold text-white mb-4">Bulk Event Upload</h2>
+      <p className="text-slate-300 text-sm mb-6">
+        Upload a JSON file containing an array of events from the API format.
+        Events will be uploaded in chunks of {CHUNK_SIZE} to avoid timeouts.
+      </p>
+
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="eventsFile" className="block text-sm font-medium text-white mb-2">
+            Select JSON File
+          </label>
+          <input
+            id="eventsFile"
+            type="file"
+            accept=".json,application/json"
+            onChange={handleFileUpload}
+            disabled={isUploading}
+            className="w-full px-4 py-2 rounded bg-slate-700 border border-slate-600 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+          />
+          <p className="text-slate-400 text-xs mt-1">
+            Expected format: Array of ApiEvent objects (see transformApiData.ts)
+          </p>
+        </div>
+
+        {/* Progress indicator */}
+        {isUploading && (
+          <div className="p-4 bg-slate-900/50 border border-slate-600 rounded">
+            <div className="flex justify-between text-sm text-slate-300 mb-2">
+              <span>Uploading chunk {progress.current} of {progress.total}...</span>
+              <span>{progressPercent}%</span>
+            </div>
+            <div className="w-full bg-slate-700 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className="flex gap-4 mt-2 text-xs">
+              <span className="text-green-400">Success: {progress.success}</span>
+              {progress.failed > 0 && (
+                <span className="text-red-400">Failed: {progress.failed}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Results summary */}
+        {!isUploading && progress.total > 0 && (
+          <div className="p-4 bg-slate-900/50 border border-slate-600 rounded">
+            <h3 className="text-sm font-medium text-white mb-2">Upload Complete</h3>
+            <div className="flex gap-4 text-sm">
+              <span className="text-green-400">Success: {progress.success}</span>
+              {progress.failed > 0 && (
+                <span className="text-red-400">Failed: {progress.failed}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Error list */}
+        {errors.length > 0 && (
+          <details className="p-4 bg-red-900/20 border border-red-700/50 rounded">
+            <summary className="cursor-pointer text-sm text-red-300 font-medium">
+              {errors.length} error(s) occurred
+            </summary>
+            <ul className="mt-2 space-y-1 text-xs text-red-300">
+              {errors.slice(0, 20).map((error, i) => (
+                <li key={i}>{error}</li>
+              ))}
+              {errors.length > 20 && (
+                <li className="text-red-400">...and {errors.length - 20} more</li>
+              )}
+            </ul>
+          </details>
+        )}
+      </div>
+
+      <details className="mt-6">
+        <summary className="cursor-pointer text-sm text-slate-400 hover:text-slate-300 font-medium">
+          Show expected JSON format
+        </summary>
+        <pre className="mt-3 p-4 bg-slate-900/50 border border-slate-600 rounded text-xs text-slate-300 overflow-x-auto">
+{`[
+  {
+    "recId": "100768",
+    "name": "Event Name",
+    "teaser": "Event description",
+    "location": "Venue Name",
+    "coordinates": [35.7796, -78.6382],
+    "date": "2025-12-23T04:59:59.000Z",
+    "times": "6:00 PM - 8:00 PM",
+    "cost": "Free",
+    "categories": [
+      { "catName": "Music", "catId": "1" }
+    ],
+    "media_raw": [
+      { "mediaurl": "https://...", "sortorder": 1, "mediatype": "Image" }
+    ],
+    "listing": {
+      "address1": "123 Main St",
+      "region": "Downtown"
+    },
+    "recurrence": "Weekly",
+    "endDate": "2026-01-01T00:00:00.000Z",
+    "city": "Raleigh"
+  }
+]`}
+        </pre>
+      </details>
+    </div>
+  )
 }
 
 export default function AdminPage() {
@@ -298,74 +457,7 @@ export default function AdminPage() {
 
             {/* Bulk Upload Tab */}
             {activeTab === 'upload' && (
-              <div className="p-6">
-                <h2 className="text-2xl font-semibold text-white mb-4">Bulk Event Upload</h2>
-                <p className="text-slate-300 text-sm mb-6">
-                  Upload a JSON file containing an array of events from the API format.
-                  Events will be automatically transformed and saved to the database.
-                </p>
-
-                <Form method="post" encType="multipart/form-data" className="space-y-4">
-                  <input type="hidden" name="action" value="bulkUpload" />
-
-                  <div>
-                    <label htmlFor="eventsFile" className="block text-sm font-medium text-white mb-2">
-                      Select JSON File
-                    </label>
-                    <input
-                      id="eventsFile"
-                      name="eventsFile"
-                      type="file"
-                      accept=".json,application/json"
-                      required
-                      className="w-full px-4 py-2 rounded bg-slate-700 border border-slate-600 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                    />
-                    <p className="text-slate-400 text-xs mt-1">
-                      Expected format: Array of ApiEvent objects (see transformApiData.ts)
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  >
-                    Upload Events
-                  </button>
-                </Form>
-
-                <details className="mt-6">
-                  <summary className="cursor-pointer text-sm text-slate-400 hover:text-slate-300 font-medium">
-                    Show expected JSON format
-                  </summary>
-                  <pre className="mt-3 p-4 bg-slate-900/50 border border-slate-600 rounded text-xs text-slate-300 overflow-x-auto">
-{`[
-  {
-    "recId": "100768",
-    "name": "Event Name",
-    "teaser": "Event description",
-    "location": "Venue Name",
-    "coordinates": [35.7796, -78.6382],
-    "date": "2025-12-23T04:59:59.000Z",
-    "times": "6:00 PM - 8:00 PM",
-    "cost": "Free",
-    "categories": [
-      { "catName": "Music", "catId": "1" }
-    ],
-    "media_raw": [
-      { "mediaurl": "https://...", "sortorder": 1, "mediatype": "Image" }
-    ],
-    "listing": {
-      "address1": "123 Main St",
-      "region": "Downtown"
-    },
-    "recurrence": "Weekly",
-    "endDate": "2026-01-01T00:00:00.000Z",
-    "city": "Raleigh"
-  }
-]`}
-                  </pre>
-                </details>
-              </div>
+              <BulkUploadTab />
             )}
 
             {/* Role Simulation Tab */}

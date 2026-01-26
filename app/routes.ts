@@ -19,4 +19,5 @@ export default [
   route("api/geocode", "routes/api.geocode.tsx"),
   route("api/directions", "routes/api.directions.tsx"),
   route("api/list-images", "routes/api.list-images.tsx"),
+  route("api/bulk-upload", "routes/api.bulk-upload.tsx"),
 ] satisfies RouteConfig;
