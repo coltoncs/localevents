@@ -508,21 +508,60 @@ export default function MapPage() {
           <label htmlFor="date-filter" className="block text-xs text-slate-400 mb-1">
             Show events on
           </label>
-          <input
-            type="date"
-            id="date-filter"
-            value={filterDate}
-            min={today}
-            onChange={(e) => {
-              setFilterDate(e.target.value)
-              setSelectedEvents([])
-              // Clear route when date changes
-              setRouteData(null)
-              setRouteEvents([])
-              setRouteSummary(null)
-            }}
-            className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                const currentDate = new Date(filterDate + 'T00:00:00')
+                currentDate.setDate(currentDate.getDate() - 1)
+                const newDate = currentDate.toISOString().split('T')[0]
+                setFilterDate(newDate)
+                setSelectedEvents([])
+                setRouteData(null)
+                setRouteEvents([])
+                setRouteSummary(null)
+              }}
+              disabled={filterDate === today}
+              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white hover:bg-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-700"
+              title="Previous day"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <input
+              type="date"
+              id="date-filter"
+              value={filterDate}
+              min={today}
+              onChange={(e) => {
+                setFilterDate(e.target.value)
+                setSelectedEvents([])
+                // Clear route when date changes
+                setRouteData(null)
+                setRouteEvents([])
+                setRouteSummary(null)
+              }}
+              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => {
+                const currentDate = new Date(filterDate + 'T00:00:00')
+                currentDate.setDate(currentDate.getDate() + 1)
+                const newDate = currentDate.toISOString().split('T')[0]
+                setFilterDate(newDate)
+                setSelectedEvents([])
+                setRouteData(null)
+                setRouteEvents([])
+                setRouteSummary(null)
+              }}
+              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white hover:bg-slate-600 transition-colors"
+              title="Next day"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Collapsible event list */}
